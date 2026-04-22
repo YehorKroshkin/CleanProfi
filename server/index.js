@@ -1,4 +1,4 @@
-import 'dotenv/config'
+import dotenv from 'dotenv'
 import cookieParser from 'cookie-parser'
 import cors from 'cors'
 import express from 'express'
@@ -8,6 +8,9 @@ import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { z } from 'zod'
+
+dotenv.config({ path: '.env.local' })
+dotenv.config()
 
 const {
   PORT = '5000',
@@ -30,6 +33,9 @@ await mongoose.connect(MONGODB_URI, {
   dbName: MONGODB_DB_NAME,
 })
 
+const orderServiceOptions = ['regular', 'deep', 'post_renovation']
+const orderObjectTypeOptions = ['apartment', 'house', 'office', 'garage']
+
 const userSchema = new mongoose.Schema(
   {
     name: { type: String, required: true, trim: true },
@@ -44,6 +50,36 @@ const userSchema = new mongoose.Schema(
 )
 
 const User = mongoose.model('User', userSchema)
+
+const orderSchema = new mongoose.Schema(
+  {
+    orderNumber: { type: String, required: true, unique: true, index: true },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    user: {
+      name: { type: String, required: true, trim: true },
+      phone: { type: String, required: true, trim: true },
+      email: { type: String, trim: true, lowercase: true },
+    },
+    city: { type: String, required: true, trim: true },
+    address: { type: String, required: true, trim: true },
+    area: { type: Number, required: true, min: 1 },
+    objectType: { type: String, required: true, enum: orderObjectTypeOptions },
+    serviceItems: {
+      type: [String],
+      required: true,
+      enum: orderServiceOptions,
+      validate: [(value) => value.length > 0, 'At least one service item is required'],
+    },
+    scheduledDate: { type: String, required: true, trim: true },
+    scheduledTime: { type: String, required: true, trim: true },
+    comment: { type: String, trim: true, default: '' },
+    estimatedCost: { type: Number, required: true, min: 0 },
+    status: { type: String, required: true, default: 'new' },
+  },
+  { timestamps: true, collection: 'orders' },
+)
+
+const Order = mongoose.model('Order', orderSchema)
 
 const registerSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -66,6 +102,22 @@ const loginSchema = z.object({
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1),
   newPassword: z.string().min(10).max(128),
+})
+
+const orderCreateSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  phone: z
+    .string()
+    .trim()
+    .regex(/^\+?[0-9()\-\s]{8,20}$/),
+  city: z.string().trim().min(2).max(120),
+  address: z.string().trim().min(4).max(220),
+  area: z.coerce.number().int().min(1).max(2000),
+  objectType: z.enum(orderObjectTypeOptions),
+  serviceItems: z.array(z.enum(orderServiceOptions)).min(1).max(3),
+  date: z.string().trim().min(1).max(32),
+  time: z.string().trim().min(1).max(32),
+  comment: z.string().trim().max(500).optional().default(''),
 })
 
 const app = express()
@@ -116,6 +168,52 @@ function clearAuthCookie(res) {
     sameSite: 'lax',
     path: '/',
   })
+}
+
+async function getOptionalAuthUser(req) {
+  try {
+    const token = req.cookies.cp_token
+    if (!token) {
+      return null
+    }
+
+    const payload = jwt.verify(token, JWT_SECRET)
+    const user = await User.findById(payload.sub).select('name city phone email')
+    return user || null
+  } catch {
+    return null
+  }
+}
+
+function buildOrderNumber() {
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0')
+
+  return `CP-${Date.now().toString(36).toUpperCase()}-${random}`
+}
+
+function calculateEstimatedCost({ serviceItems, objectType, area }) {
+  const serviceBasePrice = {
+    regular: 90,
+    deep: 150,
+    post_renovation: 210,
+  }
+  const objectMultiplier = {
+    apartment: 1,
+    house: 1.25,
+    office: 1.4,
+    garage: 1.1,
+  }
+
+  const servicesTotal = serviceItems.reduce((total, currentService) => {
+    return total + (serviceBasePrice[currentService] || 0)
+  }, 0)
+
+  const areaPart = area * 1.2
+  const total = (servicesTotal + areaPart) * (objectMultiplier[objectType] || 1)
+
+  return Math.round(total)
 }
 
 async function requireAuth(req, res, next) {
@@ -265,11 +363,56 @@ app.post('/api/auth/change-password', requireAuth, authLimiter, async (req, res)
   return res.json({ message: 'Password changed successfully' })
 })
 
+app.post('/api/orders', async (req, res) => {
+  const parsed = orderCreateSchema.safeParse(req.body)
+  if (!parsed.success) {
+    return res.status(400).json({ message: 'Invalid input', errors: parsed.error.flatten() })
+  }
+
+  const data = parsed.data
+  const authUser = await getOptionalAuthUser(req)
+  const orderNumber = buildOrderNumber()
+  const estimatedCost = calculateEstimatedCost(data)
+
+  const created = await Order.create({
+    orderNumber,
+    userId: authUser?._id,
+    user: {
+      name: data.name,
+      phone: data.phone.replace(/\s+/g, ''),
+      email: authUser?.email,
+    },
+    city: data.city,
+    address: data.address,
+    area: data.area,
+    objectType: data.objectType,
+    serviceItems: [...new Set(data.serviceItems)],
+    scheduledDate: data.date,
+    scheduledTime: data.time,
+    comment: data.comment,
+    estimatedCost,
+    status: 'new',
+  })
+
+  return res.status(201).json({
+    message: 'Order created',
+    order: {
+      id: created._id,
+      orderNumber: created.orderNumber,
+      estimatedCost: created.estimatedCost,
+      city: created.city,
+      objectType: created.objectType,
+      serviceItems: created.serviceItems,
+      status: created.status,
+    },
+  })
+})
+
 app.use((err, _req, res, _next) => {
   console.error(err)
   res.status(500).json({ message: 'Internal server error' })
 })
 
 app.listen(Number(PORT), () => {
-  console.log(`Auth API running on http://localhost:${PORT}`)
+  console.log(`API running on http://localhost:${PORT}`)
 })

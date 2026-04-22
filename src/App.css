@@ -72,6 +72,13 @@ h1 {
   cursor: pointer;
 }
 
+.inline-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
 .info-card {
   background: #ffffff;
   border: 1px solid #d9e5f8;
@@ -131,6 +138,269 @@ h1 {
 
 .profile-logout {
   margin-top: 12px;
+}
+
+.services-page {
+  display: grid;
+  gap: 16px;
+}
+
+.reviews-page,
+.faq-page,
+.contact-page {
+  display: grid;
+  gap: 16px;
+}
+
+.reviews-grid,
+.faq-list,
+.contact-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.reviews-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.review-card,
+.faq-item,
+.contact-card {
+  border: 1px solid #d9e5f8;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(17, 45, 84, 0.08);
+}
+
+.review-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.review-head h2,
+.faq-item h2,
+.contact-card h2 {
+  margin: 0;
+  color: #1b3d73;
+  font-size: 18px;
+}
+
+.review-rating {
+  color: #f4b000;
+  font-size: 15px;
+  letter-spacing: 1px;
+}
+
+.review-meta {
+  margin: 8px 0 10px;
+  color: #6a809e;
+  font-size: 13px;
+}
+
+.faq-item p,
+.contact-card p,
+.review-card p {
+  margin: 8px 0 0;
+  color: #486281;
+}
+
+.faq-contact-cta {
+  display: grid;
+  gap: 10px;
+}
+
+.contact-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.contact-card a {
+  color: #1763d6;
+}
+
+.order-page {
+  display: grid;
+  gap: 16px;
+}
+
+.order-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(320px, 0.9fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.order-form-card,
+.order-summary-card {
+  border: 1px solid #d9e5f8;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 24px;
+  box-shadow: 0 8px 20px rgba(17, 45, 84, 0.08);
+}
+
+.order-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.order-services-fieldset {
+  margin: 0;
+  border: 1px solid #d9e5f8;
+  border-radius: 12px;
+  padding: 12px;
+}
+
+.order-services-fieldset legend {
+  padding: 0 6px;
+  color: #2b507f;
+  font-size: 14px;
+}
+
+.order-services-list {
+  display: grid;
+  gap: 8px;
+}
+
+.service-check-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #2b507f;
+  width: 100%;
+}
+
+.service-check-row input {
+  width: 18px;
+  height: 18px;
+}
+
+.service-check-name {
+  line-height: 1.25;
+}
+
+.order-form .form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.order-form label {
+  display: grid;
+  gap: 6px;
+  color: #2b507f;
+  font-size: 14px;
+}
+
+.order-form input,
+.order-form select,
+.order-form textarea {
+  border: 1px solid #cfe0f8;
+  border-radius: 10px;
+  padding: 10px 12px;
+  font: inherit;
+  background: #ffffff;
+}
+
+.order-form textarea {
+  min-height: 112px;
+  resize: vertical;
+}
+
+.terms-row {
+  display: grid;
+  gap: 8px;
+  border: 1px dashed #c3d8f6;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #f8fbff;
+  text-align: center;
+  justify-items: center;
+}
+
+.terms-checkbox {
+  width: 24px;
+  height: 24px;
+  margin-top: 0;
+}
+
+.order-summary {
+  display: grid;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.order-summary-row {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #f7fbff;
+  border: 1px solid #d9e5f8;
+}
+
+.order-summary-row strong {
+  display: block;
+  color: #355a8d;
+  font-size: 13px;
+  margin-bottom: 3px;
+}
+
+.order-success {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #ecf8f0;
+  border: 1px solid #bfe7ca;
+  color: #15683a;
+}
+
+.services-hero-note {
+  margin-top: 10px;
+  color: #5d7698;
+  max-width: 760px;
+}
+
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.service-card {
+  border: 1px solid #d9e5f8;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 20px;
+  box-shadow: 0 8px 20px rgba(17, 45, 84, 0.08);
+}
+
+.service-card h2 {
+  margin: 0 0 8px;
+  color: #1b3d73;
+  font-size: 20px;
+}
+
+.service-card p {
+  margin: 0;
+  color: #486281;
+}
+
+.service-icon-wrap {
+  width: 60px;
+  height: 60px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 14px;
+  background: linear-gradient(155deg, #f5f9ff 0%, #ecf3ff 100%);
+  border: 1px solid #d4e4ff;
+}
+
+.service-icon {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
 }
 
 .auth-card {
@@ -222,5 +492,24 @@ h1 {
   .info-card,
   .auth-card {
     padding: 18px;
+  }
+
+  .order-layout,
+  .order-form .form-grid,
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .reviews-grid,
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 980px) {
+  .services-grid,
+  .reviews-grid,
+  .contact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

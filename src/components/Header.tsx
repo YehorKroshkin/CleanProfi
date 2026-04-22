@@ -3,12 +3,14 @@ import type { UserProfile } from '../api/auth'
 import { useRef } from 'react'
 import './Header.css'
 
-type Language = 'ru' | 'uk' | 'pl'
+type Language = 'en' | 'ru' | 'uk' | 'pl'
 
 type HeaderLabels = {
   menu: string
   about: string
   services: string
+  contact: string
+  order: string
   reviews: string
   faq: string
   login: string
@@ -28,6 +30,7 @@ type HeaderProps = {
 }
 
 const languages: Array<{ code: Language; label: string }> = [
+  { code: 'en', label: 'English' },
   { code: 'ru', label: 'Русский' },
   { code: 'uk', label: 'Українська' },
   { code: 'pl', label: 'Polski' },
@@ -61,27 +64,31 @@ export function Header({
     <header className="site-header">
       <Link className="brand" to="/">
         <span className="brand-logo" aria-hidden="true">
-          CP
+          <img className="brand-logo-image" src="/Logo_CleanProfi.png" alt="" />
         </span>
         <span className="brand-name">CleanProfi</span>
       </Link>
 
       <div className="header-controls">
-        <div className="language-switch" role="group" aria-label="Language switch">
-          {languages.map((lang) => (
-            <button
-              key={lang.code}
-              type="button"
-              className={language === lang.code ? 'lang-btn active' : 'lang-btn'}
-              onClick={() => setLanguage(lang.code)}
-            >
-              {lang.label}
-            </button>
-          ))}
-        </div>
+        <label className="language-select-wrap">
+          <span className="sr-only">Language</span>
+          <img className="language-icon" src="/language.png" alt="" aria-hidden="true" />
+          <select
+            className="language-select"
+            value={language}
+            onChange={(event) => setLanguage(event.target.value as Language)}
+          >
+            {languages.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <label className="city-select-wrap">
           <span className="sr-only">City</span>
+          <img className="city-icon" src="/city.png" alt="" aria-hidden="true" />
           <select
             className="city-select"
             value={city}
@@ -102,37 +109,46 @@ export function Header({
           to={user ? '/profile' : '/auth'}
           aria-label={user ? labels.profile : labels.login}
         >
-          <span className="account-icon" aria-hidden="true">
-            👤
-          </span>
+          <img className="account-icon-image" src="/user.png" alt="" aria-hidden="true" />
         </Link>
 
         <details className="menu-dropdown" ref={menuRef}>
           <summary>{labels.menu}</summary>
           <ul>
-            {user ? (
-              <li className="menu-user-meta">
-                <strong>{labels.userInfo}</strong>
-                <span>{user.name}</span>
-                <span>{user.email}</span>
-              </li>
-            ) : null}
             <li>
               <Link to={user ? '/profile' : '/auth'} onClick={closeMenu}>
                 {user ? labels.profile : labels.login}
               </Link>
             </li>
             <li>
-              <a href="/#services" onClick={closeMenu}>{labels.services}</a>
+              <Link to="/services" onClick={closeMenu}>
+                {labels.services}
+              </Link>
             </li>
             <li>
-              <a href="/#reviews" onClick={closeMenu}>{labels.reviews}</a>
+              <Link to="/order" onClick={closeMenu}>
+                {labels.order}
+              </Link>
             </li>
             <li>
-              <a href="/#about" onClick={closeMenu}>{labels.about}</a>
+              <Link to="/reviews" onClick={closeMenu}>
+                {labels.reviews}
+              </Link>
             </li>
             <li>
-              <a href="/#faq" onClick={closeMenu}>{labels.faq}</a>
+              <Link to="/about" onClick={closeMenu}>
+                {labels.about}
+              </Link>
+            </li>
+            <li>
+              <Link to="/faq" onClick={closeMenu}>
+                {labels.faq}
+              </Link>
+            </li>
+            <li>
+              <Link to="/contact" onClick={closeMenu}>
+                {labels.contact}
+              </Link>
             </li>
             {user ? (
               <li>

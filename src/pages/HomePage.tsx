@@ -1,6 +1,10 @@
+import { Link } from 'react-router-dom'
 import type { UserProfile } from '../api/auth'
-
+import serviceCatalog from '../data/ServiceCatalog';
+type Language = 'en' | 'ru' | 'uk' | 'pl'
 type Translation = {
+  faqLinkLabel: string
+  reviewsLinkLabel: string
   heroTitle: string
   heroSubtitle: string
   welcome: string
@@ -8,7 +12,7 @@ type Translation = {
   about: string
   aboutText: string
   servicesTitle: string
-  servicesItems: string[]
+  orderButton: string
   reviewsTitle: string
   reviewsText: string
   faqTitle: string
@@ -19,9 +23,10 @@ type HomePageProps = {
   city: string
   labels: Translation
   user: UserProfile | null
+  language: Language
 }
 
-export function HomePage({ city, labels, user }: HomePageProps) {
+export function HomePage({ city, labels, user, language }: HomePageProps) {
   return (
     <div className="home-page">
       {user ? (
@@ -36,9 +41,9 @@ export function HomePage({ city, labels, user }: HomePageProps) {
         <p className="city-pill">{city}</p>
         <h1>{labels.heroTitle}</h1>
         <p className="hero-subtitle">{labels.heroSubtitle}</p>
-        <button type="button" className="primary-btn">
+        <Link className="primary-btn inline-btn" to="/order">
           {labels.cta}
-        </button>
+        </Link>
       </section>
 
       <section id="about" className="info-card">
@@ -48,21 +53,33 @@ export function HomePage({ city, labels, user }: HomePageProps) {
 
       <section id="services" className="info-card">
         <h2>{labels.servicesTitle}</h2>
-        <ul>
-          {labels.servicesItems.map((item) => (
-            <li key={item}>{item}</li>
+        <div className="services-grid" style={{ marginTop: 16 }}>
+          {serviceCatalog[language].map((service) => (
+            <article className="service-card" key={service.title}>
+              <div className="service-icon-wrap" aria-hidden="true">
+                <img className="service-icon" src={service.icon} alt={service.alt} />
+              </div>
+              <h2>{service.title}</h2>
+              <p>{service.description}</p>
+            </article>
           ))}
-        </ul>
+        </div>
       </section>
 
-      <section id="reviews" className="info-card">
+      <section id="reviews" className="info-card" style={{ textAlign: 'center' }}>
         <h2>{labels.reviewsTitle}</h2>
         <p>{labels.reviewsText}</p>
+        <Link className="primary-btn inline-btn" to="/reviews">
+          {labels.reviewsLinkLabel}
+        </Link>
       </section>
 
-      <section id="faq" className="info-card">
+      <section id="faq" className="info-card" style={{ textAlign: 'center' }}>
         <h2>{labels.faqTitle}</h2>
         <p>{labels.faqText}</p>
+        <Link className="primary-btn inline-btn" to="/faq">
+          {labels.faqLinkLabel}
+        </Link>
       </section>
     </div>
   )

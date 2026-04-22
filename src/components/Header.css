@@ -17,7 +17,7 @@
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: #ffffff;
   text-decoration: none;
 }
@@ -26,13 +26,18 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
   border-radius: 50%;
-  background: #ffffff;
-  color: #1763d6;
-  font-weight: 700;
-  font-size: 13px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  overflow: hidden;
+}
+
+.brand-logo-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 .brand-name {
@@ -44,35 +49,45 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 20px;
   min-width: 0;
 }
 
-.language-switch {
+.language-select-wrap {
   display: inline-flex;
+  align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.17);
-  padding: 4px;
-  border-radius: 999px;
 }
 
-.lang-btn {
-  border: 0;
-  background: transparent;
+.language-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.language-select {
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
   border-radius: 999px;
-  padding: 7px 11px;
-  cursor: pointer;
-  font-size: 13px;
+  padding: 7px 12px;
+  min-width: 134px;
 }
 
-.lang-btn.active {
-  background: #ffffff;
-  color: #1763d6;
+.language-select option {
+  color: #1f2b43;
 }
 
 .city-select-wrap {
   display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.city-icon {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
 }
 
 .city-select {
@@ -100,16 +115,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.16);
 }
 
-.account-icon {
-  font-size: 16px;
-  line-height: 1;
+.account-icon-image {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
 }
 
 .menu-dropdown {
@@ -119,9 +135,14 @@
 .menu-dropdown summary {
   list-style: none;
   cursor: pointer;
+  min-width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.45);
-  padding: 7px 12px;
+  padding: 0 12px;
   background: rgba(255, 255, 255, 0.16);
   color: #ffffff;
 }
@@ -213,7 +234,7 @@
     justify-content: space-between;
   }
 
-  .language-switch {
-    flex-wrap: wrap;
+  .language-select {
+    min-width: 132px;
   }
 }

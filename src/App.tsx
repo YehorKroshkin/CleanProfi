@@ -1,18 +1,25 @@
 import { useEffect, useState } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { getCurrentUser, logoutUser, type UserProfile } from './api/auth'
 import { Header } from './components/Header'
 import { AuthPage } from './pages/AuthPage'
 import { HomePage } from './pages/HomePage'
 import { ProfilePage } from './pages/ProfilePage'
+import { ServicesPage } from './pages/ServicesPage'
 import './App.css'
+import type { string } from 'zod'
+import { ContactPage } from './pages/ContactPage'
+import { ReviewsPage } from './pages/ReviewsPage'
+import { FaqPage } from './pages/FaqPage'
+import { OrderPage } from './pages/OrderPage'
 
-type Language = 'ru' | 'uk' | 'pl'
+type Language = 'en' | 'ru' | 'uk' | 'pl'
 
 type Translation = {
   navMenu: string
   about: string
   services: string
+  contact: string
   reviews: string
   faq: string
   login: string
@@ -26,8 +33,29 @@ type Translation = {
   servicesItems: string[]
   reviewsTitle: string
   reviewsText: string
+  reviewsLinkLabel: string
   faqTitle: string
   faqText: string
+  faqLinkLabel: string
+  servicesPageTitle: string
+  servicesPageSubtitle: string
+  servicesPageNote: string
+  orderPageTitle: string
+  orderPageSubtitle: string
+  orderSubmit: string
+  orderButton: string
+  orderService: string
+  orderArea: string
+  orderDate: string
+  orderTime: string
+  orderName: string
+  orderPhone: string
+  orderAddress: string
+  orderComment: string
+  orderObjectType: string
+  orderFormTitle: string
+  orderSuccessTitle: string
+  orderSuccessText: string
   authTitle: string
   authSubtitle: string
   profile: string
@@ -59,10 +87,85 @@ type Translation = {
 }
 
 const translations: Record<Language, Translation> = {
+  en: {
+    navMenu: 'Menu',
+    about: 'About Us',
+    services: 'Our Services',
+    contact: 'Contact',
+    reviews: 'Reviews',
+    faq: 'FAQ',
+    login: 'Login',
+    createAccount: 'Create Account',
+    heroTitle: 'Professional cleaning for home and office',
+    heroSubtitle:
+      'CleanProfi is a flexible cleaning service: fast, careful, and transparent pricing.',
+    welcome: 'Welcome',
+    cta: 'Book Cleaning',
+    aboutText:
+      'We work by quality standards and use safe products for regular and deep cleaning.',
+    servicesTitle: 'Our Services',
+    servicesItems: ['Regular cleaning', 'Deep cleaning', 'Post-renovation cleaning'],
+    reviewsTitle: 'Client Reviews',
+    reviewsText: 'See what our clients say about us — real reviews from real people.',
+    reviewsLinkLabel: 'View reviews',
+    faqTitle: 'How We Work',
+    faqText: 'Transparency, punctuality, and quality are the three pillars of our service. Learn more about our approach.',
+    faqLinkLabel: 'Learn more',
+    servicesPageTitle: 'Our Services',
+    servicesPageSubtitle:
+      'We match cleaning format to your apartment, house, or office and show exactly what is included.',
+    servicesPageNote:
+      'The icons below help you quickly choose by space type and cleaning task.',
+    orderPageTitle: 'Book Cleaning',
+    orderPageSubtitle: 'Fill out a short request and we will prepare your order.',
+    orderSubmit: 'Submit Order',
+    orderButton: 'Book Cleaning',
+    orderService: 'Cleaning type',
+    orderArea: 'Area, m²',
+    orderDate: 'Date',
+    orderTime: 'Time',
+    orderName: 'Name',
+    orderPhone: 'Phone',
+    orderAddress: 'Address',
+    orderComment: 'Comment',
+    orderObjectType: 'Property type',
+    orderFormTitle: 'Order details',
+    orderSuccessTitle: 'Order created',
+    orderSuccessText: 'Your order has been received. We will contact you to confirm details.',
+    authTitle: 'Personal Account',
+    authSubtitle: 'Sign in or create an account to manage your orders.',
+    profile: 'Profile',
+    userInfo: 'User information',
+    userName: 'Name',
+    userCity: 'City',
+    userDistrict: 'District',
+    userStreet: 'Street',
+    userPhone: 'Phone',
+    logout: 'Log out',
+    name: 'Name',
+    city: 'City',
+    district: 'District',
+    street: 'Street',
+    phone: 'Phone number',
+    email: 'Email',
+    password: 'Password',
+    confirmPassword: 'Confirm password',
+    signIn: 'Sign in',
+    signUp: 'Sign up',
+    currentPassword: 'Current password',
+    newPassword: 'New password',
+    savePassword: 'Change password',
+    passwordChanged: 'Password changed successfully.',
+    passwordMismatch: 'Passwords do not match.',
+    passwordHint: 'At least 10 characters.',
+    authSuccess: 'Success. Welcome!',
+    registerSuccess: 'Registration complete. Now sign in.',
+  },
   ru: {
     navMenu: 'Меню',
     about: 'О нас',
     services: 'Наши услуги',
+    contact: 'Контакты',
     reviews: 'Отзывы',
     faq: 'FAQ',
     login: 'Вход',
@@ -80,10 +183,31 @@ const translations: Record<Language, Translation> = {
       'Генеральная уборка',
       'Уборка после ремонта',
     ],
-    reviewsTitle: 'Отзывы',
-    reviewsText: 'Клиенты ценят аккуратность, пунктуальность и стабильный результат.',
-    faqTitle: 'FAQ',
-    faqText: 'Выберите город, услугу и удобное время — остальное мы берём на себя.',
+    reviewsTitle: 'Отзывы клиентов',
+    reviewsText: 'Посмотрите, что говорят о нас наши клиенты — реальные отзывы от реальных людей.',
+    reviewsLinkLabel: 'Смотреть отзывы',
+    faqTitle: 'Наши принципы работы',
+    faqText: 'Прозрачность, пунктуальность и качество — три кита, на которых стоит наш сервис. Узнайте подробнее о том, как мы работаем.',
+    faqLinkLabel: 'Читать подробнее',
+    servicesPageTitle: 'Наши услуги',
+    servicesPageSubtitle: 'Подбираем формат уборки под квартиру, дом или офис и показываем, что именно входит в каждый вариант.',
+    servicesPageNote: 'Иконки ниже помогают быстрее сориентироваться по типу помещения и задаче.',
+    orderPageTitle: 'Заказать уборку',
+    orderPageSubtitle: 'Заполните короткую заявку, и мы подготовим заказ под ваш объект.',
+    orderSubmit: 'Отправить заявку',
+    orderButton: 'Заказать уборку',
+    orderService: 'Тип уборки',
+    orderArea: 'Площадь, м²',
+    orderDate: 'Дата',
+    orderTime: 'Время',
+    orderName: 'Имя',
+    orderPhone: 'Телефон',
+    orderAddress: 'Адрес',
+    orderComment: 'Комментарий',
+    orderObjectType: 'Тип объекта',
+    orderFormTitle: 'Параметры заказа',
+    orderSuccessTitle: 'Заявка сформирована',
+    orderSuccessText: 'Мы получили ваш заказ и свяжемся с вами для подтверждения деталей.',
     authTitle: 'Личный кабинет',
     authSubtitle: 'Войдите или создайте аккаунт, чтобы управлять заказами.',
     profile: 'Профиль',
@@ -117,6 +241,7 @@ const translations: Record<Language, Translation> = {
     navMenu: 'Меню',
     about: 'Про нас',
     services: 'Наші послуги',
+    contact: 'Контакти',
     reviews: 'Відгуки',
     faq: 'FAQ',
     login: 'Вхід',
@@ -134,10 +259,31 @@ const translations: Record<Language, Translation> = {
       'Генеральне прибирання',
       'Прибирання після ремонту',
     ],
-    reviewsTitle: 'Відгуки',
-    reviewsText: 'Клієнти цінують охайність, пунктуальність і стабільний результат.',
-    faqTitle: 'FAQ',
-    faqText: 'Оберіть місто, послугу та зручний час — решту ми беремо на себе.',
+    reviewsTitle: 'Відгуки клієнтів',
+    reviewsText: 'Подивіться, що кажуть про нас наші клієнти — справжні відгуки від реальних людей.',
+    reviewsLinkLabel: 'Дивитися відгуки',
+    faqTitle: 'Наші принципи роботи',
+    faqText: 'Прозорість, пунктуальність і якість — три основи нашого сервісу. Дізнайтеся більше про те, як ми працюємо.',
+    faqLinkLabel: 'Читати детальніше',
+    servicesPageTitle: 'Наші послуги',
+    servicesPageSubtitle: 'Підбираємо формат прибирання під квартиру, будинок або офіс і показуємо, що саме входить у кожен варіант.',
+    servicesPageNote: 'Іконки нижче допомагають швидше зорієнтуватися за типом приміщення та задачею.',
+    orderPageTitle: 'Замовити прибирання',
+    orderPageSubtitle: 'Заповніть коротку заявку, і ми підготуємо замовлення під ваш об’єкт.',
+    orderSubmit: 'Надіслати заявку',
+    orderButton: 'Замовити прибирання',
+    orderService: 'Тип прибирання',
+    orderArea: 'Площа, м²',
+    orderDate: 'Дата',
+    orderTime: 'Час',
+    orderName: 'Ім’я',
+    orderPhone: 'Телефон',
+    orderAddress: 'Адреса',
+    orderComment: 'Коментар',
+    orderObjectType: 'Тип об’єкта',
+    orderFormTitle: 'Параметри замовлення',
+    orderSuccessTitle: 'Заявку сформовано',
+    orderSuccessText: 'Ми отримали ваше замовлення та зв’яжемося для підтвердження деталей.',
     authTitle: 'Особистий кабінет',
     authSubtitle: 'Увійдіть або створіть акаунт, щоб керувати замовленнями.',
     profile: 'Профіль',
@@ -171,6 +317,7 @@ const translations: Record<Language, Translation> = {
     navMenu: 'Menu',
     about: 'O nas',
     services: 'Nasze usługi',
+    contact: 'Kontakt',
     reviews: 'Opinie',
     faq: 'FAQ',
     login: 'Logowanie',
@@ -188,10 +335,31 @@ const translations: Record<Language, Translation> = {
       'Sprzątanie generalne',
       'Sprzątanie po remoncie',
     ],
-    reviewsTitle: 'Opinie',
-    reviewsText: 'Klienci cenią nas za dokładność, punktualność i stałą jakość.',
-    faqTitle: 'FAQ',
-    faqText: 'Wybierz miasto, usługę i dogodny termin — resztą zajmiemy się my.',
+    reviewsTitle: 'Opinie klientów',
+    reviewsText: 'Sprawdź, co mówią o nas nasi klienci — prawdziwe opinie od prawdziwych ludzi.',
+    reviewsLinkLabel: 'Zobacz opinie',
+    faqTitle: 'Nasze zasady pracy',
+    faqText: 'Przejrzystość, punktualność i jakość — trzy filary naszego serwisu. Dowiedz się więcej o tym, jak działamy.',
+    faqLinkLabel: 'Czytaj więcej',
+    servicesPageTitle: 'Nasze usługi',
+    servicesPageSubtitle: 'Dobieramy zakres sprzątania do mieszkania, domu lub biura i pokazujemy, co dokładnie zawiera każdy wariant.',
+    servicesPageNote: 'Ikony poniżej pomagają szybciej rozpoznać typ przestrzeni i zadanie.',
+    orderPageTitle: 'Zamów sprzątanie',
+    orderPageSubtitle: 'Wypełnij krótkie zgłoszenie, a przygotujemy zamówienie dla Twojego obiektu.',
+    orderSubmit: 'Wyślij zgłoszenie',
+    orderButton: 'Zamów sprzątanie',
+    orderService: 'Rodzaj sprzątania',
+    orderArea: 'Powierzchnia, m²',
+    orderDate: 'Data',
+    orderTime: 'Godzina',
+    orderName: 'Imię',
+    orderPhone: 'Telefon',
+    orderAddress: 'Adres',
+    orderComment: 'Komentarz',
+    orderObjectType: 'Typ obiektu',
+    orderFormTitle: 'Parametry zamówienia',
+    orderSuccessTitle: 'Zgłoszenie zostało utworzone',
+    orderSuccessText: 'Otrzymaliśmy Twoje zamówienie i skontaktujemy się w celu potwierdzenia szczegółów.',
     authTitle: 'Konto osobiste',
     authSubtitle: 'Zaloguj się lub utwórz konto, aby zarządzać zamówieniami.',
     profile: 'Profil',
@@ -225,13 +393,50 @@ const translations: Record<Language, Translation> = {
 
 const cities = ['Gdansk', 'Sopot', 'Gdynia']
 
+const languageOptions: Language[] = ['en', 'ru', 'uk', 'pl']
+const languageCookieKey = 'cp_lang'
+
+function getLanguageFromCookie(): Language {
+  const cookieValue = document.cookie
+    .split('; ')
+    .find((cookiePart) => cookiePart.startsWith(`${languageCookieKey}=`))
+    ?.split('=')[1]
+
+  if (cookieValue && languageOptions.includes(cookieValue as Language)) {
+    return cookieValue as Language
+  }
+
+  return 'en'
+}
+
 function App() {
-  const [language, setLanguage] = useState<Language>('ru')
+  const location = useLocation()
+  const [language, setLanguage] = useState<Language>(() => getLanguageFromCookie())
   const [city, setCity] = useState(cities[0])
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null)
   const [authReady, setAuthReady] = useState(false)
 
   const t = translations[language]
+
+  useEffect(() => {
+    const titles: Record<string, string> = {
+      '/': 'CleanProfi',
+      '/about': `${t.about} | CleanProfi`,
+      '/services': `${t.services} | CleanProfi`,
+      '/reviews': `${t.reviews} | CleanProfi`,
+      '/faq': `${t.faq} | CleanProfi`,
+      '/contact': `${t.contact} | CleanProfi`,
+      '/order': `${t.orderPageTitle} | CleanProfi`,
+      '/auth': `${t.authTitle} | CleanProfi`,
+      '/profile': `${t.profile} | CleanProfi`,
+    }
+
+    document.title = titles[location.pathname] ?? 'CleanProfi'
+  }, [location.pathname, t.about, t.authTitle, t.contact, t.faq, t.orderPageTitle, t.profile, t.reviews, t.services])
+
+  useEffect(() => {
+    document.cookie = `${languageCookieKey}=${language}; path=/; max-age=31536000; SameSite=Lax`
+  }, [language])
 
   useEffect(() => {
     let mounted = true
@@ -279,6 +484,8 @@ function App() {
           menu: t.navMenu,
           about: t.about,
           services: t.services,
+          contact: t.contact,
+          order: t.orderButton,
           reviews: t.reviews,
           faq: t.faq,
           login: t.login,
@@ -294,7 +501,33 @@ function App() {
         <Routes>
           <Route
             path="/"
-            element={<HomePage city={city} labels={t} user={currentUser} />}
+            element={<HomePage city={city} labels={t} user={currentUser} language={language} />}
+          />
+          <Route
+            path="/about"
+            element={<HomePage city={city} labels={t} user={currentUser} language={language} />}
+          />
+          <Route
+            path="/services"
+            element={
+              <ServicesPage city={city} language={language} labels={t} />
+            }
+          />
+          <Route
+            path="/reviews"
+            element={<ReviewsPage language={language} city={city} />}
+          />
+          <Route
+            path="/faq"
+            element={<FaqPage language={language} city={city} />}
+          />
+          <Route
+            path="/contact"
+            element={<ContactPage language={language} city={city} />}
+          />
+          <Route
+            path="/order"
+            element={<OrderPage language={language} city={city} labels={t} />}
           />
           <Route
             path="/auth"
