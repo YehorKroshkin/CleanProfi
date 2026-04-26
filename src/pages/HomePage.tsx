@@ -24,12 +24,13 @@ type HomePageProps = {
   labels: Translation
   user: UserProfile | null
   language: Language
+  showWelcome?: boolean
 }
 
-export function HomePage({ city, labels, user, language }: HomePageProps) {
+export function HomePage({ city, labels, user, language, showWelcome = true }: HomePageProps) {
   return (
     <div className="home-page">
-      {user ? (
+      {showWelcome && user ? (
         <section className="welcome-banner">
           <p>
             {labels.welcome} <strong>{user.name}</strong>!

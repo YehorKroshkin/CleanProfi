@@ -6,6 +6,8 @@ import { changePassword, type UserProfile } from '../api/auth'
 
 type Translation = {
   profile: string
+  profileEditPrompt: string
+  profileContactCta: string
   userInfo: string
   logout: string
   userName: string
@@ -128,48 +130,57 @@ export function ProfilePage({ user, labels, onLogout }: ProfilePageProps) {
         </button>
       </div>
 
-      <div className="auth-card">
-        <h2>{labels.savePassword}</h2>
-        <form className="auth-form" onSubmit={handlePasswordSubmit}>
-          <label>
-            {labels.currentPassword}
-            <input
-              type="password"
-              value={currentPassword}
-              onChange={(event) => setCurrentPassword(event.target.value)}
-              required
-            />
-          </label>
+      <div className="profile-actions-grid">
+        <div className="auth-card">
+          <h2>{labels.savePassword}</h2>
+          <form className="auth-form" onSubmit={handlePasswordSubmit}>
+            <label>
+              {labels.currentPassword}
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(event) => setCurrentPassword(event.target.value)}
+                required
+              />
+            </label>
 
-          <label>
-            {labels.newPassword}
-            <input
-              type="password"
-              minLength={10}
-              value={newPassword}
-              onChange={(event) => setNewPassword(event.target.value)}
-              required
-            />
-          </label>
+            <label>
+              {labels.newPassword}
+              <input
+                type="password"
+                minLength={10}
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                required
+              />
+            </label>
 
-          <label>
-            {labels.confirmPassword}
-            <input
-              type="password"
-              minLength={10}
-              value={confirmPassword}
-              onChange={(event) => setConfirmPassword(event.target.value)}
-              required
-            />
-          </label>
+            <label>
+              {labels.confirmPassword}
+              <input
+                type="password"
+                minLength={10}
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+                required
+              />
+            </label>
 
-          {errorText ? <p className="auth-error">{errorText}</p> : null}
-          {successText ? <p className="auth-success">{successText}</p> : null}
+            {errorText ? <p className="auth-error">{errorText}</p> : null}
+            {successText ? <p className="auth-success">{successText}</p> : null}
 
-          <button type="submit" className="primary-btn" disabled={isLoading}>
-            {labels.savePassword}
-          </button>
-        </form>
+            <button type="submit" className="primary-btn" disabled={isLoading}>
+              {labels.savePassword}
+            </button>
+          </form>
+        </div>
+
+        <div className="auth-card profile-contact-card">
+          <h2>{labels.profileEditPrompt}</h2>
+          <Link className="primary-btn inline-btn" to="/contact">
+            {labels.profileContactCta}
+          </Link>
+        </div>
       </div>
     </section>
   )

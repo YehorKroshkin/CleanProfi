@@ -188,6 +188,8 @@
   display: block;
   padding: 8px 10px;
   border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
 }
 
 .menu-dropdown a:hover {
@@ -203,6 +205,8 @@
   border-radius: 8px;
   padding: 8px 10px;
   cursor: pointer;
+  font: inherit;
+  font-size: 14px;
 }
 
 .menu-action:hover {

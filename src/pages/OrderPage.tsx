@@ -21,10 +21,18 @@ type Translation = {
   orderSuccessText: string
 }
 
+type UserProfile = {
+  name: string
+  phone: string
+  city: string
+  email: string
+}
+
 type OrderPageProps = {
   language: Language
   city: string
   labels: Translation
+  user?: UserProfile
 }
 
 type ServiceKey = 'regular' | 'deep' | 'post_renovation'
@@ -115,6 +123,8 @@ const uiText: Record<Language, {
   saved: string
   validationDate: string
   validationTerms: string
+  fillFormBtn: string
+  closeBtn: string
 }> = {
   en: {
     estimateTitle: 'Approximate estimate',
@@ -125,6 +135,8 @@ const uiText: Record<Language, {
     saved: 'Order has been sent successfully.',
     validationDate: 'Please choose today or a future date.',
     validationTerms: 'Please accept terms before submitting.',
+    fillFormBtn: 'Fill form with my user data',
+    closeBtn: 'Close',
   },
   ru: {
     estimateTitle: 'Ориентировочная стоимость',
@@ -135,6 +147,8 @@ const uiText: Record<Language, {
     saved: 'Заявка успешно отправлена.',
     validationDate: 'Выберите сегодняшнюю или будущую дату.',
     validationTerms: 'Подтвердите согласие перед отправкой.',
+    fillFormBtn: 'Заполнить мои данные',
+    closeBtn: 'Закрыть',
   },
   uk: {
     estimateTitle: 'Орієнтовна вартість',
@@ -145,6 +159,8 @@ const uiText: Record<Language, {
     saved: 'Заявку успішно надіслано.',
     validationDate: 'Оберіть сьогоднішню або майбутню дату.',
     validationTerms: 'Підтвердьте згоду перед надсиланням.',
+    fillFormBtn: 'Заповнити мої дані',
+    closeBtn: 'Закрити',
   },
   pl: {
     estimateTitle: 'Szacunkowy koszt',
@@ -155,6 +171,8 @@ const uiText: Record<Language, {
     saved: 'Zgłoszenie zostało wysłane.',
     validationDate: 'Wybierz dzisiejszą lub przyszłą datę.',
     validationTerms: 'Zaakceptuj zgodę przed wysłaniem.',
+    fillFormBtn: 'Wypełnij formularz moimi danymi',
+    closeBtn: 'Zamknij',
   },
 }
 
@@ -177,9 +195,9 @@ function todayIsoDate() {
   return new Date().toISOString().slice(0, 10)
 }
 
-export function OrderPage({ language, city, labels }: OrderPageProps) {
+export function OrderPage({ language, city, labels, user }: OrderPageProps) {
   const [form, setForm] = useState<OrderFormState>({
-    serviceItems: ['regular'],
+    serviceItems: [],
     objectType: 'apartment',
     area: '',
     date: '',
@@ -193,7 +211,7 @@ export function OrderPage({ language, city, labels }: OrderPageProps) {
   const [createdOrder, setCreatedOrder] = useState<CreatedOrder | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorText, setErrorText] = useState('')
-  const [successText, setSuccessText] = useState('')
+  const [showSuccessModal, setShowSuccessModal] = useState(false)
 
   const estimate = useMemo(() => estimateCost(form), [form])
   const serviceText = useMemo(
@@ -226,10 +244,23 @@ export function OrderPage({ language, city, labels }: OrderPageProps) {
     })
   }
 
+  function fillFormWithUserData() {
+    if (!user) return
+    setForm((current) => ({
+      ...current,
+      name: user.name,
+      phone: user.phone,
+    }))
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorText('')
-    setSuccessText('')
+
+    if (form.serviceItems.length === 0) {
+      setErrorText('Please select at least one cleaning type.')
+      return
+    }
 
     if (!form.acceptedTerms) {
       setErrorText(uiText[language].validationTerms)
@@ -257,7 +288,7 @@ export function OrderPage({ language, city, labels }: OrderPageProps) {
       })
 
       setCreatedOrder(result.order)
-      setSuccessText(uiText[language].saved)
+      setShowSuccessModal(true)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Request failed'
       setErrorText(message)
@@ -272,8 +303,7 @@ export function OrderPage({ language, city, labels }: OrderPageProps) {
     form.address.trim().length >= 5 &&
     Number(form.area) > 0 &&
     form.date.length > 0 &&
-    form.time.length > 0 &&
-    form.serviceItems.length > 0
+    form.time.length > 0
 
   return (
     <div className="order-page">
@@ -389,6 +419,16 @@ export function OrderPage({ language, city, labels }: OrderPageProps) {
               />
             </label>
 
+            {user && (
+              <button
+                type="button"
+                className="fill-form-btn"
+                onClick={fillFormWithUserData}
+              >
+                {uiText[language].fillFormBtn}
+              </button>
+            )}
+
             <label>
               {labels.orderComment}
               <textarea
@@ -408,7 +448,6 @@ export function OrderPage({ language, city, labels }: OrderPageProps) {
             </label>
 
             {errorText ? <p className="auth-error">{errorText}</p> : null}
-            {successText ? <p className="auth-success">{successText}</p> : null}
 
             <button type="submit" className="primary-btn" disabled={isSubmitting || !isValidBase}>
               {labels.orderSubmit}
@@ -418,8 +457,6 @@ export function OrderPage({ language, city, labels }: OrderPageProps) {
 
         <aside className="order-summary-card">
           <h2>{uiText[language].estimateTitle}</h2>
-          <p className="order-success">{uiText[language].estimateRange}</p>
-
           <div className="order-summary">
             {createdOrder ? (
               <>
@@ -465,8 +502,65 @@ export function OrderPage({ language, city, labels }: OrderPageProps) {
               </>
             )}
           </div>
+          <p className="estimate-info">
+            <span>{uiText[language].estimateRange}</span>
+            <img className="estimate-info-icon" src="/letter-i.png" alt="" aria-hidden="true" />
+          </p>
         </aside>
+        
       </div>
+
+      {showSuccessModal && createdOrder && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h2>{labels.orderSuccessTitle}</h2>
+            <p>{labels.orderSuccessText}</p>
+            <div className="order-summary">
+              <div className="order-summary-row">
+                <strong>{uiText[language].orderNumber}</strong>
+                <span>{createdOrder.orderNumber}</span>
+              </div>
+              <div className="order-summary-row">
+                <strong>{uiText[language].estimatedCost}</strong>
+                <span>{createdOrder.estimatedCost} PLN</span>
+              </div>
+              <div className="order-summary-row">
+                <strong>{labels.orderService}</strong>
+                <span>
+                  {createdOrder.serviceItems
+                    .map((item) => serviceLabels[language][item as ServiceKey])
+                    .join(', ')}
+                </span>
+              </div>
+              <div className="order-summary-row">
+                <strong>{labels.orderObjectType}</strong>
+                <span>{objectTypeLabels[language][createdOrder.objectType]}</span>
+              </div>
+            </div>
+            <button
+              className="modal-close-btn"
+              onClick={() => {
+                setShowSuccessModal(false)
+                setCreatedOrder(null)
+                setForm({
+                  serviceItems: [],
+                  objectType: 'apartment',
+                  area: '',
+                  date: '',
+                  time: '',
+                  name: '',
+                  phone: '',
+                  address: '',
+                  comment: '',
+                  acceptedTerms: false,
+                })
+              }}
+            >
+              {uiText[language].closeBtn}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

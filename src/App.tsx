@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { getCurrentUser, logoutUser, type UserProfile } from './api/auth'
 import { Header } from './components/Header'
+import { Footer } from './components/Footer'
 import { AuthPage } from './pages/AuthPage'
 import { HomePage } from './pages/HomePage'
 import { ProfilePage } from './pages/ProfilePage'
@@ -34,6 +35,9 @@ type Translation = {
   reviewsTitle: string
   reviewsText: string
   reviewsLinkLabel: string
+  footerWorkCitiesText: string
+  footerEmailLabel: string
+  footerPhoneLabel: string
   faqTitle: string
   faqText: string
   faqLinkLabel: string
@@ -59,6 +63,8 @@ type Translation = {
   authTitle: string
   authSubtitle: string
   profile: string
+  profileEditPrompt: string
+  profileContactCta: string
   userInfo: string
   userName: string
   userCity: string
@@ -108,6 +114,9 @@ const translations: Record<Language, Translation> = {
     reviewsTitle: 'Client Reviews',
     reviewsText: 'See what our clients say about us — real reviews from real people.',
     reviewsLinkLabel: 'View reviews',
+    footerWorkCitiesText: 'We work in cities: Gdansk, Sopot, Gdynia.',
+    footerEmailLabel: 'Email',
+    footerPhoneLabel: 'Phone',
     faqTitle: 'How We Work',
     faqText: 'Transparency, punctuality, and quality are the three pillars of our service. Learn more about our approach.',
     faqLinkLabel: 'Learn more',
@@ -135,6 +144,8 @@ const translations: Record<Language, Translation> = {
     authTitle: 'Personal Account',
     authSubtitle: 'Sign in or create an account to manage your orders.',
     profile: 'Profile',
+    profileEditPrompt: 'Want to change account details?',
+    profileContactCta: 'Contact us',
     userInfo: 'User information',
     userName: 'Name',
     userCity: 'City',
@@ -186,6 +197,9 @@ const translations: Record<Language, Translation> = {
     reviewsTitle: 'Отзывы клиентов',
     reviewsText: 'Посмотрите, что говорят о нас наши клиенты — реальные отзывы от реальных людей.',
     reviewsLinkLabel: 'Смотреть отзывы',
+    footerWorkCitiesText: 'Мы работаем в городах: Gdansk, Sopot, Gdynia.',
+    footerEmailLabel: 'Почта',
+    footerPhoneLabel: 'Телефон',
     faqTitle: 'Наши принципы работы',
     faqText: 'Прозрачность, пунктуальность и качество — три кита, на которых стоит наш сервис. Узнайте подробнее о том, как мы работаем.',
     faqLinkLabel: 'Читать подробнее',
@@ -211,6 +225,8 @@ const translations: Record<Language, Translation> = {
     authTitle: 'Личный кабинет',
     authSubtitle: 'Войдите или создайте аккаунт, чтобы управлять заказами.',
     profile: 'Профиль',
+    profileEditPrompt: 'Хотите изменить данные аккаунта?',
+    profileContactCta: 'Свяжитесь с нами',
     userInfo: 'Общая информация пользователя',
     userName: 'Имя',
     userCity: 'Город',
@@ -262,6 +278,9 @@ const translations: Record<Language, Translation> = {
     reviewsTitle: 'Відгуки клієнтів',
     reviewsText: 'Подивіться, що кажуть про нас наші клієнти — справжні відгуки від реальних людей.',
     reviewsLinkLabel: 'Дивитися відгуки',
+    footerWorkCitiesText: 'Ми працюємо в містах: Gdansk, Sopot, Gdynia.',
+    footerEmailLabel: 'Пошта',
+    footerPhoneLabel: 'Телефон',
     faqTitle: 'Наші принципи роботи',
     faqText: 'Прозорість, пунктуальність і якість — три основи нашого сервісу. Дізнайтеся більше про те, як ми працюємо.',
     faqLinkLabel: 'Читати детальніше',
@@ -287,6 +306,8 @@ const translations: Record<Language, Translation> = {
     authTitle: 'Особистий кабінет',
     authSubtitle: 'Увійдіть або створіть акаунт, щоб керувати замовленнями.',
     profile: 'Профіль',
+    profileEditPrompt: 'Хочете змінити дані акаунта?',
+    profileContactCta: 'Звʼяжіться з нами',
     userInfo: 'Загальна інформація користувача',
     userName: 'Ім’я',
     userCity: 'Місто',
@@ -338,6 +359,9 @@ const translations: Record<Language, Translation> = {
     reviewsTitle: 'Opinie klientów',
     reviewsText: 'Sprawdź, co mówią o nas nasi klienci — prawdziwe opinie od prawdziwych ludzi.',
     reviewsLinkLabel: 'Zobacz opinie',
+    footerWorkCitiesText: 'Pracujemy w miastach: Gdansk, Sopot, Gdynia.',
+    footerEmailLabel: 'E-mail',
+    footerPhoneLabel: 'Telefon',
     faqTitle: 'Nasze zasady pracy',
     faqText: 'Przejrzystość, punktualność i jakość — trzy filary naszego serwisu. Dowiedz się więcej o tym, jak działamy.',
     faqLinkLabel: 'Czytaj więcej',
@@ -363,6 +387,8 @@ const translations: Record<Language, Translation> = {
     authTitle: 'Konto osobiste',
     authSubtitle: 'Zaloguj się lub utwórz konto, aby zarządzać zamówieniami.',
     profile: 'Profil',
+    profileEditPrompt: 'Chcesz zmienić dane konta?',
+    profileContactCta: 'Skontaktuj się z nami',
     userInfo: 'Ogólne informacje o użytkowniku',
     userName: 'Imię',
     userCity: 'Miasto',
@@ -395,6 +421,7 @@ const cities = ['Gdansk', 'Sopot', 'Gdynia']
 
 const languageOptions: Language[] = ['en', 'ru', 'uk', 'pl']
 const languageCookieKey = 'cp_lang'
+const cityCookieKey = 'cp_city'
 
 function getLanguageFromCookie(): Language {
   const cookieValue = document.cookie
@@ -409,10 +436,23 @@ function getLanguageFromCookie(): Language {
   return 'en'
 }
 
+function getCityFromCookie(): string {
+  const cookieValue = document.cookie
+    .split('; ')
+    .find((cookiePart) => cookiePart.startsWith(`${cityCookieKey}=`))
+    ?.split('=')[1]
+
+  if (cookieValue && cities.includes(cookieValue)) {
+    return cookieValue
+  }
+
+  return cities[0]
+}
+
 function App() {
   const location = useLocation()
   const [language, setLanguage] = useState<Language>(() => getLanguageFromCookie())
-  const [city, setCity] = useState(cities[0])
+  const [city, setCity] = useState(() => getCityFromCookie())
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null)
   const [authReady, setAuthReady] = useState(false)
 
@@ -437,6 +477,10 @@ function App() {
   useEffect(() => {
     document.cookie = `${languageCookieKey}=${language}; path=/; max-age=31536000; SameSite=Lax`
   }, [language])
+
+  useEffect(() => {
+    document.cookie = `${cityCookieKey}=${city}; path=/; max-age=31536000; SameSite=Lax`
+  }, [city])
 
   useEffect(() => {
     let mounted = true
@@ -505,7 +549,7 @@ function App() {
           />
           <Route
             path="/about"
-            element={<HomePage city={city} labels={t} user={currentUser} language={language} />}
+            element={<HomePage city={city} labels={t} user={currentUser} language={language} showWelcome={false} />}
           />
           <Route
             path="/services"
@@ -527,7 +571,7 @@ function App() {
           />
           <Route
             path="/order"
-            element={<OrderPage language={language} city={city} labels={t} />}
+            element={<OrderPage language={language} city={city} labels={t} user={currentUser} />}
           />
           <Route
             path="/auth"
@@ -546,6 +590,18 @@ function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
+      <Footer
+        labels={{
+          about: t.about,
+          reviews: t.reviews,
+          services: t.services,
+          servicesItems: t.servicesItems,
+          workCitiesText: t.footerWorkCitiesText,
+          emailLabel: t.footerEmailLabel,
+          phoneLabel: t.footerPhoneLabel,
+        }}
+      />
     </div>
   )
 }
