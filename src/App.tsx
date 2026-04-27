@@ -8,7 +8,6 @@ import { HomePage } from './pages/HomePage'
 import { ProfilePage } from './pages/ProfilePage'
 import { ServicesPage } from './pages/ServicesPage'
 import './App.css'
-import type { string } from 'zod'
 import { ContactPage } from './pages/ContactPage'
 import { ReviewsPage } from './pages/ReviewsPage'
 import { FaqPage } from './pages/FaqPage'
@@ -108,7 +107,7 @@ const translations: Record<Language, Translation> = {
     welcome: 'Welcome',
     cta: 'Book Cleaning',
     aboutText:
-      'We work by quality standards and use safe products for regular and deep cleaning.',
+      'We make apartments clean quickly and without unnecessary talk.\n\nYou place an order, we arrive, clean, and hand over a finished result. No hidden fees, no delays, and no “good enough.”\n\nWe work so you do not have to check every corner. If anything is not right, we will fix it.\n\nWhy people choose us:\n• we arrive on time\n• we clean thoroughly, not just “for looks”\n• fixed price with no surprises\n• same-day booking is possible\n• careful and respectful service\n\nYou do not need to spend your time and energy on cleaning, just leave a request.',
     servicesTitle: 'Our Services',
     servicesItems: ['Regular cleaning', 'Deep cleaning', 'Post-renovation cleaning'],
     reviewsTitle: 'Client Reviews',
@@ -187,7 +186,7 @@ const translations: Record<Language, Translation> = {
     welcome: 'Приветствуем',
     cta: 'Заказать уборку',
     aboutText:
-      'Мы работаем по стандартам качества и используем безопасные средства для ежедневной и генеральной уборки.',
+      'Делаем квартиры чистыми быстро и без лишних разговоров.\n\nВы заказываете — мы приезжаем, убираем и сдаём готовый результат. Без скрытых цен, без опозданий и без «и так сойдёт».\n\nРаботаем так, чтобы вам не пришлось проверять каждый угол. Если что-то не устроит — исправим.\n\nПочему выбирают нас:\n• приезжаем вовремя\n• делаем реально чисто, а не «на вид»\n• фиксированная цена без сюрпризов\n• можно заказать на сегодня\n• работаем аккуратно и бережно\n\nВам не нужно тратить время и силы на уборку — просто оставьте заявку.',
     servicesTitle: 'Наши услуги',
     servicesItems: [
       'Поддерживающая уборка',
@@ -268,7 +267,7 @@ const translations: Record<Language, Translation> = {
     welcome: 'Вітаємо',
     cta: 'Замовити прибирання',
     aboutText:
-      'Ми працюємо за стандартами якості та використовуємо безпечні засоби для щоденного і генерального прибирання.',
+      'Робимо квартири чистими швидко та без зайвих розмов.\n\nВи замовляєте — ми приїжджаємо, прибираємо та здаємо готовий результат. Без прихованих цін, без запізнень і без «і так зійде».\n\nПрацюємо так, щоб вам не довелося перевіряти кожен кут. Якщо щось не влаштує — виправимо.\n\nЧому обирають нас:\n• приїжджаємо вчасно\n• прибираємо справді чисто, а не «для вигляду»\n• фіксована ціна без сюрпризів\n• можна замовити на сьогодні\n• працюємо акуратно та дбайливо\n\nВам не потрібно витрачати час і сили на прибирання — просто залиште заявку.',
     servicesTitle: 'Наші послуги',
     servicesItems: [
       'Підтримувальне прибирання',
@@ -349,7 +348,7 @@ const translations: Record<Language, Translation> = {
     welcome: 'Witamy',
     cta: 'Zamów sprzątanie',
     aboutText:
-      'Pracujemy według standardów jakości i używamy bezpiecznych środków do sprzątania codziennego i generalnego.',
+      'Sprzątamy mieszkania szybko i bez zbędnych rozmów.\n\nTy składasz zamówienie, my przyjeżdżamy, sprzątamy i oddajemy gotowy efekt. Bez ukrytych opłat, bez spóźnień i bez „jakoś to będzie”.\n\nPracujemy tak, abyś nie musiał sprawdzać każdego kąta. Jeśli coś Cię nie zadowoli, poprawimy to.\n\nDlaczego wybierają nas:\n• przyjeżdżamy punktualnie\n• sprzątamy naprawdę dokładnie, a nie tylko „na oko”\n• stała cena bez niespodzianek\n• możliwe zamówienie na dziś\n• pracujemy ostrożnie i z dbałością\n\nNie musisz tracić czasu i energii na sprzątanie, po prostu zostaw zgłoszenie.',
     servicesTitle: 'Nasze usługi',
     servicesItems: [
       'Sprzątanie regularne',
@@ -433,7 +432,7 @@ function getLanguageFromCookie(): Language {
     return cookieValue as Language
   }
 
-  return 'en'
+  return 'pl'
 }
 
 function getCityFromCookie(): string {
@@ -571,7 +570,7 @@ function App() {
           />
           <Route
             path="/order"
-            element={<OrderPage language={language} city={city} labels={t} user={currentUser} />}
+            element={<OrderPage language={language} city={city} labels={t} user={currentUser ?? undefined} />}
           />
           <Route
             path="/auth"

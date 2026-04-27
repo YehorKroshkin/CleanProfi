@@ -7,6 +7,8 @@ import helmet from 'helmet'
 import jwt from 'jsonwebtoken'
 import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
+import { fileURLToPath } from 'url'
+import path from 'path'
 import { z } from 'zod'
 
 dotenv.config({ path: '.env.local' })
@@ -33,7 +35,22 @@ await mongoose.connect(MONGODB_URI, {
   dbName: MONGODB_DB_NAME,
 })
 
-const orderServiceOptions = ['regular', 'deep', 'post_renovation']
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const clientDistPath = path.resolve(__dirname, '..', 'dist')
+
+const orderBaseServiceOptions = ['regular', 'deep', 'post_renovation', 'office']
+const orderAdditionalServiceOptions = [
+  'sofa_chem_2p',
+  'chairs_chem',
+  'carpet_chem_3m',
+  'mattress_chem_2p',
+  'bed_chem_2p',
+  'kitchen_wet_cleaning',
+  'stove_hood_chem',
+  'full_premises_chem',
+]
+const orderServiceOptions = [...orderBaseServiceOptions, ...orderAdditionalServiceOptions]
 const orderObjectTypeOptions = ['apartment', 'house', 'office', 'garage']
 
 const userSchema = new mongoose.Schema(
@@ -64,16 +81,24 @@ const orderSchema = new mongoose.Schema(
     address: { type: String, required: true, trim: true },
     area: { type: Number, required: true, min: 1 },
     objectType: { type: String, required: true, enum: orderObjectTypeOptions },
-    serviceItems: {
+    baseService: { type: String, required: true, enum: orderBaseServiceOptions },
+    additionalItems: {
       type: [String],
       required: true,
-      enum: orderServiceOptions,
-      validate: [(value) => value.length > 0, 'At least one service item is required'],
+      default: [],
+      enum: orderAdditionalServiceOptions,
     },
+    furnitureCount: { type: Number, required: true, min: 0, max: 200, default: 0 },
     scheduledDate: { type: String, required: true, trim: true },
     scheduledTime: { type: String, required: true, trim: true },
     comment: { type: String, trim: true, default: '' },
     estimatedCost: { type: Number, required: true, min: 0 },
+    pricingBreakdown: {
+      basePrice: { type: Number, required: true, min: 0 },
+      areaSurcharge: { type: Number, required: true, min: 0 },
+      addOnsTotal: { type: Number, required: true, min: 0 },
+      currency: { type: String, required: true, default: 'PLN' },
+    },
     status: { type: String, required: true, default: 'new' },
   },
   { timestamps: true, collection: 'orders' },
@@ -114,7 +139,9 @@ const orderCreateSchema = z.object({
   address: z.string().trim().min(4).max(220),
   area: z.coerce.number().int().min(1).max(2000),
   objectType: z.enum(orderObjectTypeOptions),
-  serviceItems: z.array(z.enum(orderServiceOptions)).min(1).max(3),
+  baseService: z.enum(orderBaseServiceOptions),
+  additionalItems: z.array(z.enum(orderAdditionalServiceOptions)).max(20).optional().default([]),
+  furnitureCount: z.coerce.number().int().min(0).max(200).optional().default(0),
   date: z.string().trim().min(1).max(32),
   time: z.string().trim().min(1).max(32),
   comment: z.string().trim().max(500).optional().default(''),
@@ -139,6 +166,45 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
   message: { message: 'Too many attempts, try again later.' },
 })
+
+const orderLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 25,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Too many order requests, try again later.' },
+})
+
+function hasTrustedRequestOrigin(req) {
+  const origin = req.get('origin')
+  if (origin) {
+    return origin === CLIENT_ORIGIN
+  }
+
+  const referer = req.get('referer')
+  if (referer) {
+    try {
+      const refererOrigin = new URL(referer).origin
+      return refererOrigin === CLIENT_ORIGIN
+    } catch {
+      return false
+    }
+  }
+
+  return false
+}
+
+function requireTrustedOrigin(req, res, next) {
+  if (NODE_ENV !== 'production') {
+    return next()
+  }
+
+  if (hasTrustedRequestOrigin(req)) {
+    return next()
+  }
+
+  return res.status(403).json({ message: 'Forbidden origin' })
+}
 
 function makeToken(user) {
   return jwt.sign(
@@ -194,26 +260,49 @@ function buildOrderNumber() {
 }
 
 function calculateEstimatedCost({ serviceItems, objectType, area }) {
-  const serviceBasePrice = {
-    regular: 90,
-    deep: 150,
-    post_renovation: 210,
-  }
-  const objectMultiplier = {
-    apartment: 1,
-    house: 1.25,
-    office: 1.4,
-    garage: 1.1,
+  const baseServicePricing = {
+    regular: { base: 200, extraPerSqm: 6.99 },
+    deep: { base: 250, extraPerSqm: 6.99 },
+    post_renovation: { base: 170, extraPerSqm: 7.99 },
+    office: { base: 100, extraPerSqm: 5 },
   }
 
-  const servicesTotal = serviceItems.reduce((total, currentService) => {
-    return total + (serviceBasePrice[currentService] || 0)
+  const addOnPricing = {
+    sofa_chem_2p: 150,
+    chairs_chem: 50,
+    carpet_chem_3m: 200,
+    mattress_chem_2p: 100,
+    bed_chem_2p: 150,
+    kitchen_wet_cleaning: 100,
+    stove_hood_chem: 100,
+    full_premises_chem: 0,
+  }
+
+  const areaAfterIncluded = Math.max(0, area - 38)
+  const basePricing = baseServicePricing[serviceItems.baseService]
+  const basePrice = basePricing.base
+  const areaSurcharge = Math.round(areaAfterIncluded * basePricing.extraPerSqm * 100) / 100
+
+  const addOnsTotalWithoutFurniture = serviceItems.additionalItems.reduce((total, item) => {
+    return total + (addOnPricing[item] || 0)
   }, 0)
 
-  const areaPart = area * 1.2
-  const total = (servicesTotal + areaPart) * (objectMultiplier[objectType] || 1)
+  const furnitureSurcharge = serviceItems.additionalItems.includes('full_premises_chem')
+    ? Math.max(0, serviceItems.furnitureCount) * 50
+    : 0
 
-  return Math.round(total)
+  const addOnsTotal = addOnsTotalWithoutFurniture + furnitureSurcharge
+  const total = Math.round((basePrice + areaSurcharge + addOnsTotal) * 100) / 100
+
+  return {
+    total,
+    pricingBreakdown: {
+      basePrice,
+      areaSurcharge,
+      addOnsTotal,
+      currency: 'PLN',
+    },
+  }
 }
 
 async function requireAuth(req, res, next) {
@@ -243,7 +332,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true })
 })
 
-app.post('/api/auth/register', authLimiter, async (req, res) => {
+app.post('/api/auth/register', requireTrustedOrigin, authLimiter, async (req, res) => {
   const parsed = registerSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid input', errors: parsed.error.flatten() })
@@ -289,7 +378,7 @@ app.post('/api/auth/register', authLimiter, async (req, res) => {
   })
 })
 
-app.post('/api/auth/login', authLimiter, async (req, res) => {
+app.post('/api/auth/login', requireTrustedOrigin, authLimiter, async (req, res) => {
   const parsed = loginSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid input' })
@@ -323,7 +412,7 @@ app.post('/api/auth/login', authLimiter, async (req, res) => {
   })
 })
 
-app.post('/api/auth/logout', (_req, res) => {
+app.post('/api/auth/logout', requireTrustedOrigin, (_req, res) => {
   clearAuthCookie(res)
   res.status(204).send()
 })
@@ -332,7 +421,7 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ user: req.user })
 })
 
-app.post('/api/auth/change-password', requireAuth, authLimiter, async (req, res) => {
+app.post('/api/auth/change-password', requireTrustedOrigin, requireAuth, authLimiter, async (req, res) => {
   const parsed = changePasswordSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid input' })
@@ -363,7 +452,7 @@ app.post('/api/auth/change-password', requireAuth, authLimiter, async (req, res)
   return res.json({ message: 'Password changed successfully' })
 })
 
-app.post('/api/orders', async (req, res) => {
+app.post('/api/orders', requireTrustedOrigin, orderLimiter, async (req, res) => {
   const parsed = orderCreateSchema.safeParse(req.body)
   if (!parsed.success) {
     return res.status(400).json({ message: 'Invalid input', errors: parsed.error.flatten() })
@@ -372,7 +461,21 @@ app.post('/api/orders', async (req, res) => {
   const data = parsed.data
   const authUser = await getOptionalAuthUser(req)
   const orderNumber = buildOrderNumber()
-  const estimatedCost = calculateEstimatedCost(data)
+  const uniqueAdditionalItems = [...new Set(data.additionalItems)]
+  const normalizedFurnitureCount = uniqueAdditionalItems.includes('full_premises_chem')
+    ? data.furnitureCount
+    : 0
+  const serviceItemsForPricing = {
+    baseService: data.baseService,
+    additionalItems: uniqueAdditionalItems,
+    furnitureCount: normalizedFurnitureCount,
+  }
+  const priceResult = calculateEstimatedCost({
+    serviceItems: serviceItemsForPricing,
+    objectType: data.objectType,
+    area: data.area,
+  })
+  const estimatedCost = priceResult.total
 
   const created = await Order.create({
     orderNumber,
@@ -386,11 +489,14 @@ app.post('/api/orders', async (req, res) => {
     address: data.address,
     area: data.area,
     objectType: data.objectType,
-    serviceItems: [...new Set(data.serviceItems)],
+    baseService: data.baseService,
+    additionalItems: uniqueAdditionalItems,
+    furnitureCount: normalizedFurnitureCount,
     scheduledDate: data.date,
     scheduledTime: data.time,
     comment: data.comment,
     estimatedCost,
+    pricingBreakdown: priceResult.pricingBreakdown,
     status: 'new',
   })
 
@@ -401,12 +507,31 @@ app.post('/api/orders', async (req, res) => {
       orderNumber: created.orderNumber,
       estimatedCost: created.estimatedCost,
       city: created.city,
+      baseService: created.baseService,
       objectType: created.objectType,
-      serviceItems: created.serviceItems,
+      additionalItems: created.additionalItems,
+      furnitureCount: created.furnitureCount,
+      pricingBreakdown: created.pricingBreakdown,
       status: created.status,
     },
   })
 })
+
+if (NODE_ENV === 'production') {
+  app.use(express.static(clientDistPath, { index: false }))
+
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      return next()
+    }
+
+    if (req.method !== 'GET') {
+      return next()
+    }
+
+    return res.sendFile(path.join(clientDistPath, 'index.html'))
+  })
+}
 
 app.use((err, _req, res, _next) => {
   console.error(err)

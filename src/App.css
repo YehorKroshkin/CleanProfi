@@ -96,6 +96,10 @@ h1 {
   color: #486281;
 }
 
+.about-text {
+  white-space: pre-line;
+}
+
 .info-card ul {
   margin: 0;
   padding-left: 20px;
@@ -288,25 +292,135 @@ h1 {
 }
 
 .order-services-list {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.order-services-cards {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.service-option-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid #d9e5f8;
+  border-radius: 12px;
+  padding: 10px;
+  background: #f8fbff;
+}
+
+.service-option-head {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  align-items: center;
+  gap: 8px;
+}
+
+.service-option-head input {
+  width: 18px;
+  height: 18px;
+}
+
+.service-details-popup {
+  border: 1px dashed #c3d8f6;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #ffffff;
+}
+
+.service-details-popup summary {
+  cursor: pointer;
+  color: #1f4f89;
+  font-size: 13px;
+}
+
+.service-details-popup ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+}
+
+.service-details-popup li {
+  color: #486281;
+  font-size: 13px;
+  line-height: 1.35;
 }
 
 .service-check-row {
-  display: inline-flex;
+  display: grid;
+  grid-template-columns: 18px 34px minmax(0, 1fr) auto;
   align-items: center;
-  gap: 6px;
+  gap: 10px;
   color: #2b507f;
+  border: 1px solid #d9e5f8;
+  border-radius: 14px;
+  background: #f8fbff;
+  padding: 11px 12px;
+  min-height: 56px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.service-check-row:hover {
+  border-color: #a8c8f3;
+  box-shadow: 0 6px 16px rgba(23, 99, 214, 0.08);
+}
+
+.service-check-row:has(input:checked) {
+  border-color: #78a9e9;
+  background: linear-gradient(155deg, #f2f8ff 0%, #eaf3ff 100%);
+  box-shadow: 0 10px 22px rgba(23, 99, 214, 0.12);
 }
 
 .service-check-row input {
   width: 18px;
   height: 18px;
+  margin: 0;
+}
+
+.service-code-badge {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid #b8d1f2;
+  background: linear-gradient(160deg, #f7fbff 0%, #eaf2ff 100%);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.service-code-icon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
 }
 
 .service-check-name {
   line-height: 1.25;
+  font-size: 15px;
+}
+
+.service-check-row input:checked ~ .service-check-name {
+  color: #184a88;
+  font-weight: 600;
+}
+
+.service-price-pill {
+  white-space: nowrap;
+  border-radius: 999px;
+  border: 1px solid #bfd7f7;
+  padding: 4px 10px;
+  background: #ffffff;
+  color: #1f4f89;
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.furniture-count-field {
+  margin-top: 10px;
+  max-width: 260px;
 }
 
 .order-form .form-grid {
@@ -524,6 +638,8 @@ h1 {
   .order-layout,
   .profile-actions-grid,
   .order-form .form-grid,
+  .order-services-list,
+  .order-services-cards,
   .services-grid {
     grid-template-columns: 1fr;
   }

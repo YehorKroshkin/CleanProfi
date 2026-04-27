@@ -1,4 +1,4 @@
-import { useMemo, useState, type FormEvent } from 'react'
+﻿import { useMemo, useState, type FormEvent } from 'react'
 import { createOrder, type CreatedOrder } from '../api/orders'
 
 type Language = 'en' | 'ru' | 'uk' | 'pl'
@@ -35,11 +35,22 @@ type OrderPageProps = {
   user?: UserProfile
 }
 
-type ServiceKey = 'regular' | 'deep' | 'post_renovation'
+type BaseServiceKey = 'regular' | 'deep' | 'post_renovation' | 'office'
+type AdditionalServiceKey =
+  | 'sofa_chem_2p'
+  | 'chairs_chem'
+  | 'carpet_chem_3m'
+  | 'mattress_chem_2p'
+  | 'bed_chem_2p'
+  | 'kitchen_wet_cleaning'
+  | 'stove_hood_chem'
+  | 'full_premises_chem'
 type ObjectTypeKey = 'apartment' | 'house' | 'office' | 'garage'
 
 type OrderFormState = {
-  serviceItems: ServiceKey[]
+  baseService: BaseServiceKey | ''
+  additionalItems: AdditionalServiceKey[]
+  furnitureCount: string
   objectType: ObjectTypeKey
   area: string
   date: string
@@ -51,39 +62,73 @@ type OrderFormState = {
   acceptedTerms: boolean
 }
 
-const serviceBasePrice: Record<ServiceKey, number> = {
-  regular: 90,
-  deep: 150,
-  post_renovation: 210,
-}
-
-const objectMultiplier: Record<ObjectTypeKey, number> = {
-  apartment: 1,
-  house: 1.25,
-  office: 1.4,
-  garage: 1.1,
-}
-
-const serviceLabels: Record<Language, Record<ServiceKey, string>> = {
+const baseServiceLabels: Record<Language, Record<BaseServiceKey, string>> = {
   en: {
     regular: 'Regular cleaning',
     deep: 'Deep cleaning',
     post_renovation: 'Post-renovation cleaning',
+    office: 'Office cleaning',
   },
   ru: {
     regular: 'Поддерживающая уборка',
     deep: 'Генеральная уборка',
     post_renovation: 'Уборка после ремонта',
+    office: 'Уборка офисов',
   },
   uk: {
     regular: 'Підтримувальне прибирання',
     deep: 'Генеральне прибирання',
     post_renovation: 'Прибирання після ремонту',
+    office: 'Прибирання офісів',
   },
   pl: {
     regular: 'Sprzątanie regularne',
     deep: 'Sprzątanie generalne',
     post_renovation: 'Sprzątanie po remoncie',
+    office: 'Sprzątanie biur',
+  },
+}
+
+const additionalServiceLabels: Record<Language, Record<AdditionalServiceKey, string>> = {
+  en: {
+    sofa_chem_2p: 'Sofa dry cleaning (2-seater) - 150 zł',
+    chairs_chem: 'Chair dry cleaning - 50 zł',
+    carpet_chem_3m: 'Carpet dry cleaning (~3m) - 200 zł',
+    mattress_chem_2p: 'Mattress dry cleaning (2-seater) - 100 zł',
+    bed_chem_2p: 'Bed dry cleaning (2-seater) - 150 zł',
+    kitchen_wet_cleaning: 'Kitchen wet cleaning (without stove and hood) - 100 zł',
+    stove_hood_chem: 'Chemical stove + hood cleaning - 100 zł',
+    full_premises_chem: 'Chemical cleaning of full room +50 zł per furniture item',
+  },
+  ru: {
+    sofa_chem_2p: 'Химчистка дивана (2-спальный) - 150 zł',
+    chairs_chem: 'Химчистка стульев - 50 zł',
+    carpet_chem_3m: 'Химчистка ковра (~3м) - 200 zł',
+    mattress_chem_2p: 'Химчистка матраса (2-спальный) - 100 zł',
+    bed_chem_2p: 'Химчистка кровати (2-спальная) - 150 zł',
+    kitchen_wet_cleaning: 'Влажная уборка кухни (без плиты и вытяжки) - 100 zł',
+    stove_hood_chem: 'Химчистка плиты и вытяжки - 100 zł',
+    full_premises_chem: 'Химическое мытье помещения +50 zł за каждую мебель',
+  },
+  uk: {
+    sofa_chem_2p: 'Хімчистка дивана (2-місний) - 150 zł',
+    chairs_chem: 'Хімчистка стільців - 50 zł',
+    carpet_chem_3m: 'Хімчистка килима (~3м) - 200 zł',
+    mattress_chem_2p: 'Хімчистка матраца (2-місний) - 100 zł',
+    bed_chem_2p: 'Хімчистка ліжка (2-місне) - 150 zł',
+    kitchen_wet_cleaning: 'Вологе прибирання кухні (без плити та витяжки) - 100 zł',
+    stove_hood_chem: 'Хімчистка плити та витяжки - 100 zł',
+    full_premises_chem: 'Хімічне миття всього приміщення +50 zł за кожну мебель',
+  },
+  pl: {
+    sofa_chem_2p: 'Pranie kanapy (2-osobowej) - 150 zł',
+    chairs_chem: 'Pranie krzeseł - 50 zł',
+    carpet_chem_3m: 'Pranie dywanu (~3m) - 200 zł',
+    mattress_chem_2p: 'Pranie materaca (2-osobowego) - 100 zł',
+    bed_chem_2p: 'Pranie łóżka (2-osobowego) - 150 zł',
+    kitchen_wet_cleaning: 'Mokre sprzątanie kuchni (bez płyty i okapu) - 100 zł',
+    stove_hood_chem: 'Chemiczne mycie płyty i okapu - 100 zł',
+    full_premises_chem: 'Chemiczne mycie całego pomieszczenia +50 zł za każdy mebel',
   },
 }
 
@@ -114,9 +159,108 @@ const objectTypeLabels: Record<Language, Record<ObjectTypeKey, string>> = {
   },
 }
 
+const baseServiceDetails: Record<Language, Record<BaseServiceKey, string[]>> = {
+  en: {
+    regular: [
+      'Starting from 200 zł for 1 room + 1 toilet (30-38 m²).',
+      'For area above 38 m²: +6.99 zł per each extra m².',
+      'Includes vacuuming, floor washing, dust wiping, and basic kitchen cleaning with dish washing.',
+    ],
+    deep: [
+      'Starting from 250 zł for 1 room + 1 toilet (30-38 m²).',
+      'For area above 38 m²: +6.99 zł per each extra m².',
+      'Includes windows, shower cabin, bath, toilet, cabinet washing, plus everything from regular cleaning and full kitchen chemical cleaning.',
+    ],
+    post_renovation: [
+      'Starting from 170 zł for 30-38 m².',
+      'For area above 38 m²: +7.99 zł per each extra m².',
+      'Includes trash cleanup, dust removal, vacuuming, and wet cleaning.',
+    ],
+    office: [
+      'Starting from 100 zł for 30-38 m².',
+      'For area above 38 m²: +5 zł per each extra m².',
+      'Includes wet cleaning, vacuuming, floor washing, and dust cleaning. Kitchen cleaning is available separately for 100 zł.',
+    ],
+  },
+  ru: {
+    regular: [
+      'Старт от 200 zł за 1 комнату и 1 туалет (30-38 м²).',
+      'Если площадь больше 38 м²: +6.99 zł за каждый следующий м².',
+      'Входит: пылесос, мытьё полов, вытирание пыли, базовая уборка кухни и мытьё посуды.',
+    ],
+    deep: [
+      'Старт от 250 zł за 1 комнату и 1 туалет (30-38 м²).',
+      'Если площадь больше 38 м²: +6.99 zł за каждый следующий м².',
+      'Входит: мытьё окон, душевой кабины, ванной (если есть), туалета, шкафов, плюс всё из обычной уборки и полная мойка кухни химией.',
+    ],
+    post_renovation: [
+      'Старт от 170 zł за помещение (30-38 м²).',
+      'Если площадь больше 38 м²: +7.99 zł за каждый следующий м².',
+      'Входит: уборка мусора, очистка от пыли, пылесос и влажная уборка.',
+    ],
+    office: [
+      'Старт от 100 zł за помещение (30-38 м²).',
+      'Если площадь больше 38 м²: +5 zł за каждый следующий м².',
+      'Входит: влажная уборка, пылесос, мытьё полов, чистка от пыли. Уборка кухни - отдельно за 100 zł.',
+    ],
+  },
+  uk: {
+    regular: [
+      'Старт від 200 zł за 1 кімнату і 1 туалет (30-38 м²).',
+      'Якщо площа більша за 38 м²: +6.99 zł за кожен наступний м².',
+      'Входить: пилосос, миття підлоги, витирання пилу, базове прибирання кухні та миття посуду.',
+    ],
+    deep: [
+      'Старт від 250 zł за 1 кімнату і 1 туалет (30-38 м²).',
+      'Якщо площа більша за 38 м²: +6.99 zł за кожен наступний м².',
+      'Входить: миття вікон, душової кабіни, ванни (якщо є), туалету, шаф, плюс усе зі звичайного прибирання та повне миття кухні хімією.',
+    ],
+    post_renovation: [
+      'Старт від 170 zł за приміщення (30-38 м²).',
+      'Якщо площа більша за 38 м²: +7.99 zł за кожен наступний м².',
+      'Входить: прибирання сміття, очистка від пилу, пилосос і вологе прибирання.',
+    ],
+    office: [
+      'Старт від 100 zł за приміщення (30-38 м²).',
+      'Якщо площа більша за 38 м²: +5 zł за кожен наступний м².',
+      'Входить: вологе прибирання, пилосос, миття підлоги, очистка від пилу. Прибирання кухні - окремо за 100 zł.',
+    ],
+  },
+  pl: {
+    regular: [
+      'Start od 200 zł za 1 pokój i 1 toaletę (30-38 m²).',
+      'Powyżej 38 m²: +6.99 zł za każdy dodatkowy m².',
+      'W cenie: odkurzanie, mycie podłogi, ścieranie kurzu, podstawowe sprzątanie kuchni i mycie naczyń.',
+    ],
+    deep: [
+      'Start od 250 zł za 1 pokój i 1 toaletę (30-38 m²).',
+      'Powyżej 38 m²: +6.99 zł za każdy dodatkowy m².',
+      'W cenie: mycie okien, kabiny prysznicowej, wanny (jeśli jest), toalety, szafek, plus wszystko z regularnego sprzątania i pełne mycie kuchni chemią.',
+    ],
+    post_renovation: [
+      'Start od 170 zł za pomieszczenie (30-38 m²).',
+      'Powyżej 38 m²: +7.99 zł za każdy dodatkowy m².',
+      'W cenie: usunięcie śmieci, czyszczenie kurzu, odkurzanie i mycie na mokro.',
+    ],
+    office: [
+      'Start od 100 zł za pomieszczenie (30-38 m²).',
+      'Powyżej 38 m²: +5 zł za każdy dodatkowy m².',
+      'W cenie: sprzątanie na mokro, odkurzanie, mycie podłogi, usuwanie kurzu. Sprzątanie kuchni osobno - 100 zł.',
+    ],
+  },
+}
+
 const uiText: Record<Language, {
   estimateTitle: string
   estimateRange: string
+  baseServicesTitle: string
+  addOnsTitle: string
+  detailsLabel: string
+  furnitureCountLabel: string
+  selectBaseServiceError: string
+  pricingBaseLabel: string
+  pricingAreaLabel: string
+  pricingAddonsLabel: string
   terms: string
   orderNumber: string
   estimatedCost: string
@@ -128,7 +272,15 @@ const uiText: Record<Language, {
 }> = {
   en: {
     estimateTitle: 'Approximate estimate',
-    estimateRange: 'Final price may vary depending on real condition and details on site.',
+    estimateRange: 'If any questions arise, we will contact you to clarify the details.',
+    baseServicesTitle: 'Base cleaning service',
+    addOnsTitle: 'Additional services',
+    detailsLabel: 'What is included',
+    furnitureCountLabel: 'Furniture pieces count',
+    selectBaseServiceError: 'Please select a base cleaning service.',
+    pricingBaseLabel: 'Base service',
+    pricingAreaLabel: 'Area surcharge',
+    pricingAddonsLabel: 'Additional services',
     terms: 'I agree to personal data processing and order confirmation call.',
     orderNumber: 'Order No.',
     estimatedCost: 'Estimated cost',
@@ -140,7 +292,15 @@ const uiText: Record<Language, {
   },
   ru: {
     estimateTitle: 'Ориентировочная стоимость',
-    estimateRange: 'Итоговая цена может немного меняться после уточнения деталей на объекте.',
+    estimateRange: 'При возникновении вопросов мы свяжемся для уточнения.',
+    baseServicesTitle: 'Базовый тип уборки',
+    addOnsTitle: 'Дополнительные услуги',
+    detailsLabel: 'Что входит',
+    furnitureCountLabel: 'Количество единиц мебели',
+    selectBaseServiceError: 'Выберите базовый тип уборки.',
+    pricingBaseLabel: 'Базовая услуга',
+    pricingAreaLabel: 'Доплата за площадь',
+    pricingAddonsLabel: 'Дополнительные услуги',
     terms: 'Согласен на обработку персональных данных и звонок для подтверждения заказа.',
     orderNumber: 'Номер заказа',
     estimatedCost: 'Оценочная стоимость',
@@ -152,7 +312,15 @@ const uiText: Record<Language, {
   },
   uk: {
     estimateTitle: 'Орієнтовна вартість',
-    estimateRange: 'Підсумкова ціна може трохи змінюватися після уточнення деталей на обʼєкті.',
+    estimateRange: 'У разі виникнення запитань ми зв’яжемося для уточнення.',
+    baseServicesTitle: 'Базовий тип прибирання',
+    addOnsTitle: 'Додаткові послуги',
+    detailsLabel: 'Що входить',
+    furnitureCountLabel: 'Кількість одиниць меблів',
+    selectBaseServiceError: 'Оберіть базовий тип прибирання.',
+    pricingBaseLabel: 'Базова послуга',
+    pricingAreaLabel: 'Доплата за площу',
+    pricingAddonsLabel: 'Додаткові послуги',
     terms: 'Погоджуюсь на обробку персональних даних і дзвінок для підтвердження замовлення.',
     orderNumber: 'Номер замовлення',
     estimatedCost: 'Орієнтовна вартість',
@@ -164,7 +332,15 @@ const uiText: Record<Language, {
   },
   pl: {
     estimateTitle: 'Szacunkowy koszt',
-    estimateRange: 'Cena końcowa może się nieznacznie różnić po doprecyzowaniu szczegółów na miejscu.',
+    estimateRange: 'W razie pytań skontaktujemy się w celu doprecyzowania.',
+    baseServicesTitle: 'Podstawowy typ sprzątania',
+    addOnsTitle: 'Dodatkowe usługi',
+    detailsLabel: 'Co obejmuje',
+    furnitureCountLabel: 'Liczba mebli',
+    selectBaseServiceError: 'Wybierz podstawowy typ sprzątania.',
+    pricingBaseLabel: 'Usługa bazowa',
+    pricingAreaLabel: 'Dopłata za metraż',
+    pricingAddonsLabel: 'Dodatkowe usługi',
     terms: 'Wyrażam zgodę na przetwarzanie danych i kontakt telefoniczny w celu potwierdzenia zamówienia.',
     orderNumber: 'Numer zamówienia',
     estimatedCost: 'Szacunkowy koszt',
@@ -176,18 +352,97 @@ const uiText: Record<Language, {
   },
 }
 
-const serviceKeys: ServiceKey[] = ['regular', 'deep', 'post_renovation']
+const baseServiceKeys: BaseServiceKey[] = ['regular', 'deep', 'post_renovation', 'office']
+const additionalServiceKeys: AdditionalServiceKey[] = [
+  'sofa_chem_2p',
+  'chairs_chem',
+  'carpet_chem_3m',
+  'mattress_chem_2p',
+  'bed_chem_2p',
+  'kitchen_wet_cleaning',
+  'stove_hood_chem',
+  'full_premises_chem',
+]
+const additionalServiceCodes: Record<AdditionalServiceKey, string> = {
+  sofa_chem_2p: '/extra-service/seater-sofa.png',
+  chairs_chem: '/extra-service/chair.png',
+  carpet_chem_3m: '/extra-service/adornment.png',
+  mattress_chem_2p: '/extra-service/air-mattress.png',
+  bed_chem_2p: '/extra-service/double-bed.png',
+  kitchen_wet_cleaning: '/extra-service/kitchen.png',
+  stove_hood_chem: '/extra-service/stove.png',
+  full_premises_chem: '/extra-service/cleaning-liquid.png',
+}
+const additionalServicePriceBadges: Record<AdditionalServiceKey, string> = {
+  sofa_chem_2p: '150 zł',
+  chairs_chem: '50 zł',
+  carpet_chem_3m: '200 zł',
+  mattress_chem_2p: '100 zł',
+  bed_chem_2p: '150 zł',
+  kitchen_wet_cleaning: '100 zł',
+  stove_hood_chem: '100 zł',
+  full_premises_chem: '+50 zł',
+}
 const objectTypeKeys: ObjectTypeKey[] = ['apartment', 'house', 'office', 'garage']
+
+function getAdditionalServiceTitle(service: AdditionalServiceKey, label: string) {
+  if (service === 'full_premises_chem') {
+    return label.replace(/\s*\+\d+(?:[.,]\d+)?\s*zł.*$/iu, '').trim()
+  }
+
+  const splitMarker = ' - '
+  const markerIndex = label.indexOf(splitMarker)
+
+  if (markerIndex === -1) {
+    return label
+  }
+
+  return label.slice(0, markerIndex).trim()
+}
 
 function estimateCost(form: OrderFormState) {
   const areaNumber = Number(form.area || 0)
-  const servicesTotal = form.serviceItems.reduce((total, item) => total + serviceBasePrice[item], 0)
-  const raw = (servicesTotal + areaNumber * 1.2) * objectMultiplier[form.objectType]
-  const rounded = Math.round(raw)
+  const basePricing: Record<BaseServiceKey, { base: number; extraPerSqm: number }> = {
+    regular: { base: 200, extraPerSqm: 6.99 },
+    deep: { base: 250, extraPerSqm: 6.99 },
+    post_renovation: { base: 170, extraPerSqm: 7.99 },
+    office: { base: 100, extraPerSqm: 5 },
+  }
+  const addOnPricing: Record<AdditionalServiceKey, number> = {
+    sofa_chem_2p: 150,
+    chairs_chem: 50,
+    carpet_chem_3m: 200,
+    mattress_chem_2p: 100,
+    bed_chem_2p: 150,
+    kitchen_wet_cleaning: 100,
+    stove_hood_chem: 100,
+    full_premises_chem: 0,
+  }
+
+  if (!form.baseService) {
+    return {
+      total: 0,
+      basePrice: 0,
+      areaSurcharge: 0,
+      addOnsTotal: 0,
+    }
+  }
+
+  const basePrice = basePricing[form.baseService].base
+  const areaSurcharge = Math.max(0, areaNumber - 38) * basePricing[form.baseService].extraPerSqm
+  const addOnsCore = form.additionalItems.reduce((total, item) => total + addOnPricing[item], 0)
+  const furnitureCount = Number(form.furnitureCount || 0)
+  const furnitureSurcharge = form.additionalItems.includes('full_premises_chem')
+    ? Math.max(0, furnitureCount) * 50
+    : 0
+  const addOnsTotal = addOnsCore + furnitureSurcharge
+  const total = basePrice + areaSurcharge + addOnsTotal
 
   return {
-    min: Math.max(0, Math.round(rounded * 0.9)),
-    max: Math.max(0, Math.round(rounded * 1.1)),
+    total: Math.round(total * 100) / 100,
+    basePrice: Math.round(basePrice * 100) / 100,
+    areaSurcharge: Math.round(areaSurcharge * 100) / 100,
+    addOnsTotal: Math.round(addOnsTotal * 100) / 100,
   }
 }
 
@@ -197,7 +452,9 @@ function todayIsoDate() {
 
 export function OrderPage({ language, city, labels, user }: OrderPageProps) {
   const [form, setForm] = useState<OrderFormState>({
-    serviceItems: [],
+    baseService: '',
+    additionalItems: [],
+    furnitureCount: '',
     objectType: 'apartment',
     area: '',
     date: '',
@@ -215,8 +472,8 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
 
   const estimate = useMemo(() => estimateCost(form), [form])
   const serviceText = useMemo(
-    () => form.serviceItems.map((service) => serviceLabels[language][service]).join(', '),
-    [form.serviceItems, language],
+    () => form.additionalItems.map((service) => additionalServiceLabels[language][service]).join(', '),
+    [form.additionalItems, language],
   )
 
   function updateField<Field extends keyof OrderFormState>(field: Field, value: OrderFormState[Field]) {
@@ -226,20 +483,30 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
     }))
   }
 
-  function toggleService(service: ServiceKey) {
+  function selectBaseService(service: BaseServiceKey) {
+    setForm((current) => ({
+      ...current,
+      baseService: service,
+      objectType: service === 'office' ? 'office' : current.objectType,
+    }))
+  }
+
+  function toggleAdditionalService(service: AdditionalServiceKey) {
     setForm((current) => {
-      const exists = current.serviceItems.includes(service)
+      const exists = current.additionalItems.includes(service)
       if (exists) {
-        const remaining = current.serviceItems.filter((value) => value !== service)
+        const remaining = current.additionalItems.filter((value) => value !== service)
         return {
           ...current,
-          serviceItems: remaining.length > 0 ? remaining : current.serviceItems,
+          additionalItems: remaining,
+          furnitureCount:
+            service === 'full_premises_chem' ? '' : current.furnitureCount,
         }
       }
 
       return {
         ...current,
-        serviceItems: [...current.serviceItems, service],
+        additionalItems: [...current.additionalItems, service],
       }
     })
   }
@@ -257,8 +524,8 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
     event.preventDefault()
     setErrorText('')
 
-    if (form.serviceItems.length === 0) {
-      setErrorText('Please select at least one cleaning type.')
+    if (!form.baseService) {
+      setErrorText(uiText[language].selectBaseServiceError)
       return
     }
 
@@ -281,7 +548,11 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
         address: form.address.trim(),
         area: Number(form.area),
         objectType: form.objectType,
-        serviceItems: form.serviceItems,
+        baseService: form.baseService,
+        additionalItems: form.additionalItems,
+        furnitureCount: form.additionalItems.includes('full_premises_chem')
+          ? Number(form.furnitureCount || 0)
+          : 0,
         date: form.date,
         time: form.time,
         comment: form.comment.trim(),
@@ -298,6 +569,7 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
   }
 
   const isValidBase =
+    form.baseService.length > 0 &&
     form.name.trim().length >= 2 &&
     form.phone.trim().length >= 8 &&
     form.address.trim().length >= 5 &&
@@ -318,19 +590,72 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
           <h2>{labels.orderFormTitle}</h2>
           <form className="order-form" onSubmit={(event) => void handleSubmit(event)}>
             <fieldset className="order-services-fieldset">
-              <legend>{labels.orderService}</legend>
-              <div className="order-services-list">
-                {serviceKeys.map((service) => (
-                  <label key={service} className="service-check-row">
-                    <input
-                      type="checkbox"
-                      checked={form.serviceItems.includes(service)}
-                      onChange={() => toggleService(service)}
-                    />
-                    <span className="service-check-name">{serviceLabels[language][service]}</span>
+              <legend>{uiText[language].baseServicesTitle}</legend>
+              <div className="order-services-cards">
+                {baseServiceKeys.map((service) => (
+                  <label key={service} className="service-option-card">
+                    <div className="service-option-head">
+                      <input
+                        type="radio"
+                        name="baseService"
+                        checked={form.baseService === service}
+                        onChange={() => selectBaseService(service)}
+                      />
+                      <span className="service-check-name">{baseServiceLabels[language][service]}</span>
+                    </div>
+                    <details className="service-details-popup">
+                      <summary>{uiText[language].detailsLabel}</summary>
+                      <ul>
+                        {baseServiceDetails[language][service].map((line) => (
+                          <li key={line}>{line}</li>
+                        ))}
+                      </ul>
+                    </details>
                   </label>
                 ))}
               </div>
+            </fieldset>
+
+            <fieldset className="order-services-fieldset">
+              <legend>{uiText[language].addOnsTitle}</legend>
+              <div className="order-services-list">
+                {additionalServiceKeys.map((service) => {
+                  const rawLabel = additionalServiceLabels[language][service]
+                  const serviceTitle = getAdditionalServiceTitle(service, rawLabel)
+
+                  return (
+                    <label key={service} className="service-check-row">
+                      <input
+                        type="checkbox"
+                        checked={form.additionalItems.includes(service)}
+                        onChange={() => toggleAdditionalService(service)}
+                      />
+                      <span className="service-code-badge" aria-hidden="true">
+                        <img
+                          className="service-code-icon"
+                          src={additionalServiceCodes[service]}
+                          alt=""
+                        />
+                      </span>
+                      <span className="service-check-name">{serviceTitle}</span>
+                      <span className="service-price-pill">{additionalServicePriceBadges[service]}</span>
+                    </label>
+                  )
+                })}
+              </div>
+              {form.additionalItems.includes('full_premises_chem') ? (
+                <label className="furniture-count-field">
+                  {uiText[language].furnitureCountLabel}
+                  <input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={form.furnitureCount}
+                    onChange={(event) => updateField('furnitureCount', event.target.value)}
+                    placeholder="0"
+                  />
+                </label>
+              ) : null}
             </fieldset>
 
             <div className="form-grid">
@@ -338,6 +663,7 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
                 {labels.orderObjectType}
                 <select
                   value={form.objectType}
+                  disabled={form.baseService === 'office'}
                   onChange={(event) => updateField('objectType', event.target.value as ObjectTypeKey)}
                 >
                   {objectTypeKeys.map((option) => (
@@ -466,15 +792,21 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
                 </div>
                 <div className="order-summary-row">
                   <strong>{uiText[language].estimatedCost}</strong>
-                  <span>{createdOrder.estimatedCost} PLN</span>
+                  <span>{createdOrder.estimatedCost} zł</span>
                 </div>
                 <div className="order-summary-row">
-                  <strong>{labels.orderService}</strong>
+                  <strong>{uiText[language].pricingBaseLabel}</strong>
                   <span>
-                    {createdOrder.serviceItems
-                      .map((item) => serviceLabels[language][item as ServiceKey])
-                      .join(', ')}
+                    {baseServiceLabels[language][createdOrder.baseService]}
                   </span>
+                </div>
+                <div className="order-summary-row">
+                  <strong>{uiText[language].pricingAreaLabel}</strong>
+                  <span>{createdOrder.pricingBreakdown.areaSurcharge} zł</span>
+                </div>
+                <div className="order-summary-row">
+                  <strong>{uiText[language].pricingAddonsLabel}</strong>
+                  <span>{createdOrder.pricingBreakdown.addOnsTotal} zł</span>
                 </div>
                 <div className="order-summary-row">
                   <strong>{labels.orderObjectType}</strong>
@@ -484,8 +816,20 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
             ) : (
               <>
                 <div className="order-summary-row">
-                  <strong>{labels.orderService}</strong>
-                  <span>{serviceText}</span>
+                  <strong>{uiText[language].pricingBaseLabel}</strong>
+                  <span>
+                    {form.baseService
+                      ? baseServiceLabels[language][form.baseService]
+                      : '—'}
+                  </span>
+                </div>
+                <div className="order-summary-row">
+                  <strong>{uiText[language].pricingAreaLabel}</strong>
+                  <span>{estimate.areaSurcharge} zł</span>
+                </div>
+                <div className="order-summary-row">
+                  <strong>{uiText[language].pricingAddonsLabel}</strong>
+                  <span>{serviceText || '—'}</span>
                 </div>
                 <div className="order-summary-row">
                   <strong>{labels.orderObjectType}</strong>
@@ -493,7 +837,7 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
                 </div>
                 <div className="order-summary-row">
                   <strong>{uiText[language].estimatedCost}</strong>
-                  <span>{estimate.min} - {estimate.max} PLN</span>
+                  <span>{estimate.total} zł</span>
                 </div>
                 <div className="order-summary-row">
                   <strong>{labels.orderArea}</strong>
@@ -522,15 +866,21 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
               </div>
               <div className="order-summary-row">
                 <strong>{uiText[language].estimatedCost}</strong>
-                <span>{createdOrder.estimatedCost} PLN</span>
+                <span>{createdOrder.estimatedCost} zł</span>
               </div>
               <div className="order-summary-row">
-                <strong>{labels.orderService}</strong>
+                <strong>{uiText[language].pricingBaseLabel}</strong>
                 <span>
-                  {createdOrder.serviceItems
-                    .map((item) => serviceLabels[language][item as ServiceKey])
-                    .join(', ')}
+                  {baseServiceLabels[language][createdOrder.baseService]}
                 </span>
+              </div>
+              <div className="order-summary-row">
+                <strong>{uiText[language].pricingAreaLabel}</strong>
+                <span>{createdOrder.pricingBreakdown.areaSurcharge} zł</span>
+              </div>
+              <div className="order-summary-row">
+                <strong>{uiText[language].pricingAddonsLabel}</strong>
+                <span>{createdOrder.additionalItems.length ? createdOrder.additionalItems.map((item) => additionalServiceLabels[language][item as AdditionalServiceKey]).join(', ') : '—'}</span>
               </div>
               <div className="order-summary-row">
                 <strong>{labels.orderObjectType}</strong>
@@ -543,7 +893,9 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
                 setShowSuccessModal(false)
                 setCreatedOrder(null)
                 setForm({
-                  serviceItems: [],
+                  baseService: '',
+                  additionalItems: [],
+                  furnitureCount: '',
                   objectType: 'apartment',
                   area: '',
                   date: '',
@@ -564,3 +916,4 @@ export function OrderPage({ language, city, labels, user }: OrderPageProps) {
     </div>
   )
 }
+

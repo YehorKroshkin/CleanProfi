@@ -49,7 +49,7 @@ export function HomePage({ city, labels, user, language, showWelcome = true }: H
 
       <section id="about" className="info-card">
         <h2>{labels.about}</h2>
-        <p>{labels.aboutText}</p>
+        <p className="about-text">{labels.aboutText}</p>
       </section>
 
       <section id="services" className="info-card">

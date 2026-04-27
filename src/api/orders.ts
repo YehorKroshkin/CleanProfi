@@ -9,7 +9,18 @@ export type CreateOrderPayload = {
   address: string
   area: number
   objectType: 'apartment' | 'house' | 'office' | 'garage'
-  serviceItems: Array<'regular' | 'deep' | 'post_renovation'>
+  baseService: 'regular' | 'deep' | 'post_renovation' | 'office'
+  additionalItems: Array<
+    | 'sofa_chem_2p'
+    | 'chairs_chem'
+    | 'carpet_chem_3m'
+    | 'mattress_chem_2p'
+    | 'bed_chem_2p'
+    | 'kitchen_wet_cleaning'
+    | 'stove_hood_chem'
+    | 'full_premises_chem'
+  >
+  furnitureCount?: number
   date: string
   time: string
   comment?: string
@@ -20,8 +31,16 @@ export type CreatedOrder = {
   orderNumber: string
   estimatedCost: number
   city: string
+  baseService: 'regular' | 'deep' | 'post_renovation' | 'office'
   objectType: 'apartment' | 'house' | 'office' | 'garage'
-  serviceItems: string[]
+  additionalItems: string[]
+  furnitureCount: number
+  pricingBreakdown: {
+    basePrice: number
+    areaSurcharge: number
+    addOnsTotal: number
+    currency: 'PLN'
+  }
   status: string
 }
 
