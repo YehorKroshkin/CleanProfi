@@ -50,8 +50,8 @@ const faqByLanguage: Record<Language, FaqItem[]> = {
       answer: 'Standard cleaning includes dusting, floor washing, kitchen and bathroom cleaning, trash removal, and cleaning mirrors and surfaces.',
     },
     {
-      question: 'Do I need to provide my own products and equipment?',
-      answer: 'No, our specialists arrive with everything needed: professional cleaning products and equipment.',
+      question: 'Do I need to provide my own cleaning products?',
+      answer: 'It depends on the cleaning type: the client provides cleaning products, while the company supplies all required professional equipment.',
     },
     {
       question: 'How long does cleaning take?',
@@ -96,8 +96,8 @@ const faqByLanguage: Record<Language, FaqItem[]> = {
       answer: 'В стандартную уборку входит: протирка пыли, мытьё полов, уборка кухни и ванной, вынос мусора, чистка зеркал и поверхностей.',
     },
     {
-      question: 'Нужно ли предоставлять свои средства и инвентарь?',
-      answer: 'Нет, наши специалисты приезжают со всем необходимым: профессиональной химией и оборудованием.',
+      question: 'Нужно ли предоставлять свои чистящие средства?',
+      answer: 'Это зависит от формата уборки: клиент предоставляет чистящие средства, а компания обеспечивает команду всем необходимым профессиональным оборудованием.',
     },
     {
       question: 'Сколько времени занимает уборка?',
@@ -142,8 +142,8 @@ const faqByLanguage: Record<Language, FaqItem[]> = {
       answer: 'У стандартне прибирання входить: протирання пилу, миття підлоги, прибирання кухні та ванної, винесення сміття, чистка дзеркал і поверхонь.',
     },
     {
-      question: 'Чи потрібно надавати свої засоби та інвентар?',
-      answer: 'Ні, наші фахівці приїжджають з усім необхідним: професійною хімією та обладнанням.',
+      question: 'Чи потрібно надавати власні мийні засоби?',
+      answer: 'Це залежить від формату прибирання: клієнт надає мийні засоби, а компанія забезпечує команду всім необхідним професійним обладнанням.',
     },
     {
       question: 'Скільки часу займає прибирання?',
@@ -188,8 +188,8 @@ const faqByLanguage: Record<Language, FaqItem[]> = {
       answer: 'Standardowe sprzątanie obejmuje: wycieranie kurzu, mycie podłóg, sprzątanie kuchni i łazienki, wyniesienie śmieci oraz czyszczenie luster i powierzchni.',
     },
     {
-      question: 'Czy muszę zapewnić własne środki i sprzęt?',
-      answer: 'Nie, nasi specjaliści przyjeżdżają ze wszystkim, co potrzebne: profesjonalną chemią i sprzętem.',
+      question: 'Czy muszę zapewnić własne środki czystości?',
+      answer: 'To zależy od rodzaju sprzątania: klient zapewnia środki czystości, a firma dostarcza cały niezbędny profesjonalny sprzęt.',
     },
     {
       question: 'Ile trwa sprzątanie?',
