@@ -9,6 +9,7 @@ import mongoose from 'mongoose'
 import bcrypt from 'bcryptjs'
 import { fileURLToPath } from 'url'
 import path from 'path'
+import fs from 'fs'
 import { z } from 'zod'
 
 dotenv.config({ path: '.env.local' })
@@ -38,6 +39,7 @@ await mongoose.connect(MONGODB_URI, {
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 const clientDistPath = path.resolve(__dirname, '..', 'dist')
+const clientIndexPath = path.join(clientDistPath, 'index.html')
 
 const orderBaseServiceOptions = ['regular', 'deep', 'post_renovation', 'office']
 const orderAdditionalServiceOptions = [
@@ -517,10 +519,10 @@ app.post('/api/orders', requireTrustedOrigin, orderLimiter, async (req, res) => 
   })
 })
 
-if (NODE_ENV === 'production') {
+if (fs.existsSync(clientIndexPath)) {
   app.use(express.static(clientDistPath, { index: false }))
 
-  app.get('*', (req, res, next) => {
+  app.use((req, res, next) => {
     if (req.path.startsWith('/api/')) {
       return next()
     }
@@ -529,7 +531,14 @@ if (NODE_ENV === 'production') {
       return next()
     }
 
-    return res.sendFile(path.join(clientDistPath, 'index.html'))
+    return res.sendFile(clientIndexPath)
+  })
+} else {
+  app.get('/', (_req, res) => {
+    res.status(200).json({
+      message:
+        'API is running. Frontend is not built yet. Use http://localhost:5173 in development or run npm run build to serve frontend from this server.',
+    })
   })
 }
 
